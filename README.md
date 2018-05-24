@@ -1,8 +1,9 @@
-# synology-cloud-sync-decrypt-tool
-Open source version of the Synology Cloud Sync decryption tool with a GUI
+# Synology Cloud Sync Decryption Tool
+Open source version of the Synology Cloud Sync decryption tool with a nice GUI option for MacOS!
 
 # Goal
 
+Currently, Synology has this tool available for Windows and Ubuntu/Fedora but not on mac and the tool is closed source.
 An open source implementation/description of the encryption/decryption
 algorithm used by Synology NAS products in their Cloud Sync feature, where one
 can sync data on the NAS to the likes of Google Drive.
