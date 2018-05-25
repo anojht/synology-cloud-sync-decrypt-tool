@@ -1,4 +1,5 @@
 import sys
+import os
 import runpy
 import webbrowser
 from PIL import Image, ImageTk
@@ -10,10 +11,9 @@ if sys.version_info < (3, 0):
     import ttk
 else:
     import tkinter as tk
-    tk._test()
     import tkinter.messagebox
     import tkinter.filedialog
-    import ttk
+    import tkinter.ttk
 
 
 root = tk.Tk()
@@ -63,7 +63,7 @@ pkfilebox = tk.Entry(root, state='disabled')
 method.set(1)
 
 def load_file():
-    fname = tkFileDialog.askopenfilename()
+    fname = tkinter.filedialog.askopenfilename()
     
     if fname:
         try:
@@ -72,7 +72,7 @@ def load_file():
             pkfilebox.insert(0, fname)
             pkfilebox.config(state='readonly')
         except:
-            tkMessageBox.showwarning("Open Key File", "Failed to read file\n'%s'" % fname)
+            tkinter.messagebox.showwarning("Open Key File", "Failed to read file\n'%s'" % fname)
         return
 
 
@@ -85,7 +85,7 @@ pulabel = tk.Label(root,
 pufilebox = tk.Entry(root, state='disabled')
 
 def load_filepu():
-    fname = tkFileDialog.askopenfilename()
+    fname = tkinter.filedialog.askopenfilename()
     
     if fname:
         try:
@@ -94,7 +94,7 @@ def load_filepu():
             pufilebox.insert(0, fname)
             pufilebox.config(state='readonly')
         except:
-            tkMessageBox.showwarning("Open Key File", "Failed to read file\n'%s'" % fname)
+            tkinter.messagebox.showwarning("Open Key File", "Failed to read file\n'%s'" % fname)
         return
 
 
@@ -120,9 +120,9 @@ item.set(1)
 
 def load_decrypt_file():
     if (item.get() == 1):
-        fname = tkFileDialog.askopenfilename()
+        fname = tkinter.filedialog.askopenfilename()
     else:
-        fname = tkFileDialog.askdirectory()
+        fname = tkinter.filedialog.askdirectory()
     
     if fname:
         try:
@@ -131,7 +131,7 @@ def load_decrypt_file():
             filebox.insert(0, fname)
             filebox.config(state='readonly')
         except:
-            tkMessageBox.showwarning("Open Key File", "Failed to read:\n'%s'" % fname)
+            tkinter.messagebox.showwarning("Open Key File", "Failed to read:\n'%s'" % fname)
         return
 
 filebtn = tk.Button(root, text="Select", command=load_decrypt_file)
@@ -144,7 +144,7 @@ outputlabel = tk.Label(root,
 outputbox = tk.Entry(root, state='disabled', width=34)
 
 def load_output():
-    fname = tkFileDialog.askdirectory()
+    fname = tkinter.filedialog.askdirectory()
     
     if fname:
         try:
@@ -153,50 +153,70 @@ def load_output():
             outputbox.insert(0, fname)
             outputbox.config(state='readonly')
         except:
-            tkMessageBox.showwarning("Open Key File", "Failed to read:\n'%s'" % fname)
+            tkinter.messagebox.showwarning("Open Key File", "Failed to read:\n'%s'" % fname)
         return
 
 
 outputbtn = tk.Button(root, text="Select", command=load_output)
 
-w = ttk.Separator(root)
+w = tk.ttk.Separator(root)
 
 def validate():
     if method.get() == 1:
         if password.get() != "":
             if filebox.get() != "":
                 if outputbox.get() != "":
+                    if os.path.dirname(filebox.get()) == outputbox.get():
+                        tkinter.messagebox.showwarning("Decryption", "Output folder cannot be the same folder as the encrypted file/folder!")
+                        return
+                    elif outputbox.get().startswith(os.path.abspath(filebox.get())+os.sep):
+                        tkinter.messagebox.showwarning("Decryption", "Output folder cannot be inside the encryption folder!")
+                        return
+                    elif os.path.basename(filebox.get()) == os.path.basename(outputbox.get()):
+                        if os.path.dirname(filebox.get()) == os.path.dirname(outputbox.get()):
+                            tkinter.messagebox.showwarning("Decryption", "Output folder cannot be the same folder as the encrypted folder!")
+                            return
                     try:
                         run_tool()
                     except:
-                        tkMessageBox.showwarning("Decryption", "Failed to decrypt file(s), please raise an issue using the support button located in the about option of the application menu")
+                        tkinter.messagebox.showwarning("Decryption", "Failed to decrypt file(s), please raise an issue using the support button located in the about option of the application menu")
                     else:
-                        tkMessageBox.showinfo("Decryption", "Files have successfully been decrypted and can be found in the destination folder")
+                        tkinter.messagebox.showinfo("Decryption", "Files have successfully been decrypted and can be found in the destination folder")
                 else:
-                    tkMessageBox.showwarning("Decryption", "Please choose output folder!")
+                    tkinter.messagebox.showwarning("Decryption", "Please choose output folder!")
             else:
-                tkMessageBox.showwarning("Decryption", "Please choose file or folder to decrypt!")
+                tkinter.messagebox.showwarning("Decryption", "Please choose file or folder to decrypt!")
         else:
-            tkMessageBox.showwarning("Decryption", "Please enter your password!")
+            tkinter.messagebox.showwarning("Decryption", "Please enter your password!")
     elif method.get() == 2:
         if pkfilebox.get() != "":
             if pufilebox.get() != "":
                 if filebox.get() != "":
                     if outputbox.get() != "":
+                        if os.path.dirname(filebox.get()) == outputbox.get():
+                            tkinter.messagebox.showwarning("Decryption", "Output folder cannot be the same folder as the encrypted file/folder!")
+                            return
+                        elif outputbox.get().startswith(os.path.abspath(filebox.get())+os.sep):
+                            tkinter.messagebox.showwarning("Decryption", "Output folder cannot be inside the encryption folder!")
+                            return
+                        elif os.path.basename(filebox.get()) == os.path.basename(outputbox.get()):
+                            if os.path.dirname(filebox.get()) == os.path.dirname(outputbox.get()):
+                                tkinter.messagebox.showwarning("Decryption", "Output folder cannot be the same folder as the encrypted folder!")
+                                return
                         try:
                             run_tool()
                         except:
-                            tkMessageBox.showwarning("Decryption", "Failed to decrypt file(s), please raise an issue using the support button located in the about option of the application menu")
+                            tkinter.messagebox.showwarning("Decryption", "Failed to decrypt file(s), please raise an issue using the support button located in the about option of the application menu")
                         else:
-                            tkMessageBox.showinfo("Decryption", "Files have successfully been decrypted and can be found in the destination folder")
+                            tkinter.messagebox.showinfo("Decryption", "Files have successfully been decrypted and can be found in the destination folder")
                     else:
-                        tkMessageBox.showwarning("Decryption", "Please choose output folder!")
+                        tkinter.messagebox.showwarning("Decryption", "Please choose output folder!")
                 else:
-                    tkMessageBox.showwarning("Decryption", "Please choose file or folder to decrypt!")
+                    tkinter.messagebox.showwarning("Decryption", "Please choose file or folder to decrypt!")
             else:
-                tkMessageBox.showwarning("Decryption", "Please select your public key file!")
+                tkinter.messagebox.showwarning("Decryption", "Please select your public key file!")
         else:
-            tkMessageBox.showwarning("Decryption", "Please select your private key file!")
+            tkinter.messagebox.showwarning("Decryption", "Please select your private key file!")
 
 
 def reset_app():
@@ -298,5 +318,8 @@ def about_dialog():
 
 
 root.createcommand('tkAboutDialog', about_dialog)
+
+if not os.path.isfile("/usr/local/bin/lz4"):
+    os.system('make install -C lz4-1.8.2/')
 
 root.mainloop()
