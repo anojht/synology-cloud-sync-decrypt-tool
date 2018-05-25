@@ -3,8 +3,8 @@ import os
 import sys
 import logging
 
-#import syndecrypt.core as core
-import core
+import syndecrypt.core as core
+#import core
 
 LOGGER=logging.getLogger(__name__)
 

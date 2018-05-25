@@ -24,10 +24,10 @@ import docopt
 import os
 import logging
     
-#import syndecrypt.files as files
-import files
-#import syndecrypt.util as util
-import util
+import syndecrypt.files as files
+#import files
+import syndecrypt.util as util
+#from syndecrypt import util
 
 def main(args):
     
@@ -60,7 +60,7 @@ def main(args):
     f = arguments['<encrypted-file>']
     ff = os.path.abspath(f)
     fp = os.path.basename(ff)
-
+    
     if os.path.isdir(ff):
         if not os.path.isdir(os.path.join(output_dir, fp)):
             output_dir = os.path.join(output_dir, fp)

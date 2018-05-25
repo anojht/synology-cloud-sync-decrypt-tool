@@ -1,6 +1,7 @@
-#import syndecrypt.util as util
-import util
-from util import switch
+import syndecrypt.util as util
+#import util
+#from util import switch
+import codecs
 
 from Crypto.Cipher import AES
 from Crypto.Cipher import PKCS1_OAEP
@@ -30,9 +31,13 @@ LOGGER=logging.getLogger(__name__)
 # pwd and salt must be bytes objects
 def _openssl_kdf(algo, pwd, salt, key_size, iv_size, iteration):
     temp = b''
-
+    
     fd = temp
     while len(fd) < key_size + iv_size:
+        try:
+            pwd = pwd.encode()
+        except AttributeError:
+            pass
         temp = _hasher(algo, temp + pwd + salt, iteration)
         fd += temp
 
@@ -43,7 +48,7 @@ def _openssl_kdf(algo, pwd, salt, key_size, iv_size, iteration):
 
 def _hasher(algo, data, iteration):
     digest = data
-    for i in xrange(iteration):
+    for i in range(iteration):
         h = hashlib.new(algo)
         h.update(digest)
         digest = h.digest()
@@ -72,7 +77,7 @@ def decrypted_with_private_key(ciphertext, private_key):
         return PKCS1_OAEP.new(RSA.importKey(private_key)).decrypt(ciphertext)
 
 def decryptor_with_password(password, salt=b''):
-        return _decryptor_with_keyiv(_csenc_pbkdf(password.decode('hex'), salt))
+        return _decryptor_with_keyiv(_csenc_pbkdf(codecs.decode(password, 'hex_codec'), salt))
 
 def _csenc_pbkdf(password, salt, iteration=1):
         AES_KEY_SIZE_BITS = 256
@@ -91,6 +96,10 @@ def decryptor_update(decryptor, ciphertext):
 def salted_hash_of(salt, data):
         m = hashlib.md5()
         m.update(salt.encode('ascii'))
+        try:
+            data = data.encode()
+        except AttributeError:
+            pass
         m.update(data)
         return salt + m.hexdigest()
 
