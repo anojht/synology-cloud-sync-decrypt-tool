@@ -57,7 +57,7 @@ pk = tk.Radiobutton(root,
                     variable = method,
                     value = 2)
 
-password = tk.Entry(root)
+password = tk.Entry(root, show="*")
 
 pkfilebox = tk.Entry(root, state='disabled')
 method.set(1)
