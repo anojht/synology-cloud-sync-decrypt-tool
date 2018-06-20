@@ -1,7 +1,10 @@
 import sys
 import os
+import logging
+import logging.handlers
 import runpy
 import webbrowser
+import subprocess
 from PIL import Image, ImageTk
 from syndecrypt import __main__
 if sys.version_info < (3, 0):
@@ -15,11 +18,23 @@ else:
     import tkinter.filedialog
     import tkinter.ttk
 
+if not os.path.isfile("/usr/local/bin/lz4"):
+    #os.system("""osascript -e 'do shell script "make install -C lz4-1.8.2/" with administrator privileges'""")
+    pid = os.system("""open -a InstallMeFirst""")
+    if pid == 0:
+        sys.exit(0)
+
 
 root = tk.Tk()
 root.title("Cloud Sync Decryption Tool")
 root.resizable(0,0)
 root.withdraw()
+
+home_dir = os.path.expanduser('~')
+log_file = os.path.join(home_dir, "Library/Logs/com.anojht.opensourcesynologycloudsyncdecrypttool.log")
+
+logging.basicConfig(filename=log_file, level=logging.DEBUG, format='%(asctime)s %(levelname)s %(name)s %(message)s')
+elogger=logging.getLogger('synology_logger')
 
 top = tk.Toplevel()
 top.config(width=100)
@@ -178,7 +193,8 @@ def validate():
                             return
                     try:
                         run_tool()
-                    except:
+                    except Exception as e:
+                        elogger.error(e)
                         tkinter.messagebox.showwarning("Decryption", "Failed to decrypt file(s), please raise an issue using the support button located in the about option of the application menu")
                     else:
                         tkinter.messagebox.showinfo("Decryption", "Files have successfully been decrypted and can be found in the destination folder")
@@ -205,7 +221,8 @@ def validate():
                                 return
                         try:
                             run_tool()
-                        except:
+                        except Exception as e:
+                            elogger.error(e)
                             tkinter.messagebox.showwarning("Decryption", "Failed to decrypt file(s), please raise an issue using the support button located in the about option of the application menu")
                         else:
                             tkinter.messagebox.showinfo("Decryption", "Files have successfully been decrypted and can be found in the destination folder")
@@ -318,8 +335,5 @@ def about_dialog():
 
 
 root.createcommand('tkAboutDialog', about_dialog)
-
-if not os.path.isfile("/usr/local/bin/lz4"):
-    os.system('make install -C lz4-1.8.2/')
 
 root.mainloop()

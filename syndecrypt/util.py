@@ -70,4 +70,4 @@ class FilterSubprocess:
 
 class Lz4Decompressor(FilterSubprocess):
         def __init__(self, decompressed_chunk_handler):
-                FilterSubprocess.__init__(self, ['lz4', '-d'], stdout_handler=decompressed_chunk_handler)
+                FilterSubprocess.__init__(self, ['/usr/local/bin/lz4', '-d'], stdout_handler=decompressed_chunk_handler)
