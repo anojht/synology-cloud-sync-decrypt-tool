@@ -24,7 +24,7 @@ source 'Synology Cloud Sync Decryption Tool', since I want to avoid doing
 things that might be construed to be illegal.)
 
 # Install
-Please note that the app found in the release is set to auto install the necessary dependencies. This is for the average user who may not be savvy or want to install brew on their mac. If you for some reason do not trust the lz4 binary and Xcode Command Line Tools installer packaged with the app, you can clone the repo, remove the InstallMeFirst.app and follow the instructions below.
+Please note that the app found in the release is set to auto install the necessary dependencies. This is for the average user who may not be savvy or not want to install brew on their mac. If you for some reason do not trust the lz4 binary and Xcode Command Line Tools installer packaged with the app, you can clone the repo, remove the InstallMeFirst.app and follow the instructions below.
 ```
 brew install lz4
 brew install python
