@@ -38,9 +38,9 @@ pip install -r syndecrypt/requirements.txt
 python Synology.py
 ```
 
-## Installing Compile-time Dependencies
+## Troubleshooting Installation Errors
 
-If you choose to install dependencies manually per the instructions above, you will need to build some dependencies from source. If `pip install` is dying with clang errors during this process, try following these steps:
+If you choose to install dependencies manually as per the instructions above, you may need to build some dependencies from source. If `pip install` is dying with clang errors during this process, try following these steps:
 
 1. Identify which dependency is failing or missing, such as `libgmp`.
 2. Ensure you have a suitable copy of the dependency, such as with Homebrew (e.g. `brew install gmp`).
