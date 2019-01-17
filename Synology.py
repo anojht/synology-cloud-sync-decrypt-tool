@@ -5,18 +5,19 @@ import logging.handlers
 import runpy
 import webbrowser
 import subprocess
+import datetime
 from PIL import Image, ImageTk
 from syndecrypt import __main__
 if sys.version_info < (3, 0):
     import Tkinter as tk
     import tkFileDialog
     import tkMessageBox
-    import ttk
+    from Tkinter import ttk
 else:
     import tkinter as tk
     import tkinter.messagebox
     import tkinter.filedialog
-    import tkinter.ttk
+    from tkinter import ttk
 
 if not os.path.isfile("/usr/local/bin/lz4"):
     #os.system("""osascript -e 'do shell script "make install -C lz4-1.8.2/" with administrator privileges'""")
@@ -27,6 +28,7 @@ if not os.path.isfile("/usr/local/bin/lz4"):
 
 root = tk.Tk()
 root.title("Cloud Sync Decryption Tool")
+root.configure(bg='#e7e7e7')
 root.resizable(0,0)
 root.withdraw()
 
@@ -41,7 +43,8 @@ top.config(width=100)
 top.resizable(0,0)
 top.attributes('-topmost', True)
 top.title("DISCLAIMER")
-msg = tk.Message(top, text="This software is provided for free. If you have paid for or have been asked to pay for this software, it is likely not legitimate. Please discontinue using this software and seek help from proper authorities.")
+top.configure(bg="#e7e7e7")
+msg = tk.Message(top, background="#e7e7e7", text="This software is provided for free. If you have paid for or have been asked to pay for this software, it is likely not legitimate. Please discontinue using this software and seek help from proper authorities.")
 msg.pack(padx=10, pady=5)
 
 def start():
@@ -50,31 +53,31 @@ def start():
     root.attributes('-topmost', True)
     root.attributes('-topmost', False)
 
-button = tk.Button(top, text="OK", command=start, pady=5)
-button.pack()
+button = ttk.Button(top, text="OK", command=start)
+button.pack(pady=5)
 top.protocol('WM_DELETE_WINDOW', start)
 
 method = tk.IntVar()
 item = tk.IntVar()
 
-methodlabel = tk.Label(root,
+methodlabel = ttk.Label(root,
                        text = "Select Decryption method",
                        justify = tk.LEFT,
-                       padx = 20)
+                       padding = (20,0,0,0))
 
-p = tk.Radiobutton(root,
+p = ttk.Radiobutton(root,
                    text = "Password",
                    variable = method,
                    value = 1)
 
-pk = tk.Radiobutton(root,
+pk = ttk.Radiobutton(root,
                     text = "Private Key",
                     variable = method,
                     value = 2)
 
-password = tk.Entry(root, show="*")
+password = ttk.Entry(root, show="*")
 
-pkfilebox = tk.Entry(root, state='disabled')
+pkfilebox = ttk.Entry(root, state='disabled')
 method.set(1)
 
 def load_file():
@@ -91,13 +94,13 @@ def load_file():
         return
 
 
-pkbtn = tk.Button(root, text="Select", command=load_file)
+pkbtn = ttk.Button(root, text="Select", command=load_file)
 
-pulabel = tk.Label(root,
+pulabel = ttk.Label(root,
                        text = "Public Key",
                        justify = tk.LEFT,
-                       padx = 52)
-pufilebox = tk.Entry(root, state='disabled')
+                       padding = (50,0,0,0))
+pufilebox = ttk.Entry(root, state='disabled')
 
 def load_filepu():
     fname = tkinter.filedialog.askopenfilename()
@@ -113,24 +116,24 @@ def load_filepu():
         return
 
 
-pubtn = tk.Button(root, text="Select", command=load_filepu)
+pubtn = ttk.Button(root, text="Select", command=load_filepu)
 
-itemlabel = tk.Label(root,
+itemlabel = ttk.Label(root,
                      text = "Choose a file or folder to decrypt",
                      justify = tk.LEFT,
-                     padx = 20)
+                     padding = (20,0,0,0))
 
-file = tk.Radiobutton(root,
+file = ttk.Radiobutton(root,
                       text = "File",
                       variable = item,
                       value = 1)
 
-folder = tk.Radiobutton(root,
+folder = ttk.Radiobutton(root,
                         text = "Folder",
                         variable = item,
                         value = 2)
 
-filebox = tk.Entry(root, state='disabled', width=34)
+filebox = ttk.Entry(root, state='disabled', width=34)
 item.set(1)
 
 def load_decrypt_file():
@@ -149,14 +152,14 @@ def load_decrypt_file():
             tkinter.messagebox.showwarning("Open Key File", "Failed to read:\n'%s'" % fname)
         return
 
-filebtn = tk.Button(root, text="Select", command=load_decrypt_file)
+filebtn = ttk.Button(root, text="Select", command=load_decrypt_file)
 
-outputlabel = tk.Label(root,
+outputlabel = ttk.Label(root,
                      text = "Choose output folder",
                      justify = tk.LEFT,
-                     padx = 20)
+                     padding = (20,0,0,0))
 
-outputbox = tk.Entry(root, state='disabled', width=34)
+outputbox = ttk.Entry(root, state='disabled', width=34)
 
 def load_output():
     fname = tkinter.filedialog.askdirectory()
@@ -172,7 +175,7 @@ def load_output():
         return
 
 
-outputbtn = tk.Button(root, text="Select", command=load_output)
+outputbtn = ttk.Button(root, text="Select", command=load_output)
 
 w = tk.ttk.Separator(root)
 
@@ -254,9 +257,9 @@ def reset_app():
     outputbox.config(state='disabled')
 
 
-reset = tk.Button(root, text="Reset", command=reset_app)
+reset = ttk.Button(root, text="Reset", command=reset_app)
 
-decrypt = tk.Button(root, text="Decrypt", command=validate)
+decrypt = ttk.Button(root, text="Decrypt", command=validate)
 
 
 methodlabel.grid(row=0, column=1, columnspan=2, sticky=tk.W, pady=(10,2))
@@ -311,27 +314,29 @@ def open_url(url):
 def about_dialog():
     win = tk.Toplevel()
     win.title("About")
+    win.configure(bg="#e7e7e7")
     win.resizable(0,0)
     
     img = ImageTk.PhotoImage(Image.open("app.gif").resize((128, 128), Image.ANTIALIAS))
-    icon = tk.Label(win, image=img)
+    icon = ttk.Label(win, image=img)
     icon.image = img
-    name = tk.Label(win, text="Open Source Synology Cloud Sync Decryption Tool", font="San\ Francisco 14 bold")
-    author = tk.Label(win, text="© 2018 - Created by Anojh Thayaparan")
+    name = ttk.Label(win, text="Open Source Synology Cloud Sync Decryption Tool", font="San\ Francisco 14 bold")
+    copytext = "© " + str(datetime.datetime.now().year) + " - Created by Anojh Thayaparan"
+    author = ttk.Label(win, text=copytext)
     license = tk.Text(win, height=8, width=31, font="San\ Francisco 12", wrap='word')
     license.insert("1.0", "\nLICENSE:\n This app is provided as is to the user, without any liabilities, warranties or guarantees from the author. Any damages arising from use or misuse of the software is not a liability of the author.\nFor more information refer to the COPYRIGHTS file shipped with the application.")
     license.tag_config("center", justify='center')
     license.tag_add("center", "1.0", "end")
     license.config(state='disabled', highlightbackground='grey', highlightcolor='grey', borderwidth=1, highlightthickness=1)
-    support = tk.Button(win, text="Support", command=lambda: open_url("https://github.com/anojht/synology-cloud-sync-decrypt-tool/issues"))
-    donate = tk.Button(win, text="Donate", command=lambda: open_url("https://www.paypal.me/Anojh"))
+    support = ttk.Button(win, text="Support", command=lambda: open_url("https://github.com/anojht/synology-cloud-sync-decrypt-tool/issues"))
+    donate = ttk.Button(win, text="Donate", command=lambda: open_url("https://www.paypal.me/Anojh"))
     
     icon.grid(row=0, column=1, padx=10)
     name.grid(row=1, column=1, padx=10)
     author.grid(row=2, column=1)
     license.grid(row=3, column=1, pady=10)
     donate.grid(row=4, column=1, padx=(0,80), pady=(0,5))
-    support.grid(row=4, column=1, padx=(80,0), pady=(0,5))
+    support.grid(row=4, column=1, padx=(90,0), pady=(0,5))
 
 
 root.createcommand('tkAboutDialog', about_dialog)
