@@ -24,7 +24,9 @@ source 'Synology Cloud Sync Decryption Tool', since I want to avoid doing
 things that might be construed to be illegal.)
 
 # Install
+
 Please note that the app found in the release is set to auto install the necessary dependencies. This is for the average user who may not be savvy or not want to install brew on their mac. If you for some reason do not trust the lz4 binary and Xcode Command Line Tools installer packaged with the app, you can clone the repo, remove the InstallMeFirst.app and follow the instructions below.
+
 ```
 brew install lz4
 brew install python
@@ -35,6 +37,17 @@ source ~/syndecrypt-venv/bin/activate
 pip install -r syndecrypt/requirements.txt
 python Synology.py
 ```
+
+## Troubleshooting Installation Errors
+
+If you choose to install dependencies manually as per the instructions above, you may need to build some dependencies from source. If `pip install` is dying with clang errors during this process, try following these steps:
+
+1. Identify which dependency is failing or missing, such as `libgmp`.
+2. Ensure you have a suitable copy of the dependency, such as with Homebrew (e.g. `brew install gmp`).
+3. Identify where Homebrew installs the headers and libraries (usually `/usr/local/include` and `/usr/local/lib`, respectively).
+4. Provide pip with arguments to pass to clang specifying these paths.
+    - [Using ~/.pydistutils.cfg](https://stackoverflow.com/a/19253719)
+    - [Using `--global-option`](https://stackoverflow.com/a/28981343)
 
 # Feedback
 
