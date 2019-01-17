@@ -49,6 +49,12 @@ If you choose to install dependencies manually as per the instructions above, yo
     - [Using ~/.pydistutils.cfg](https://stackoverflow.com/a/19253719)
     - [Using `--global-option`](https://stackoverflow.com/a/28981343)
 
+## Troubleshooting App Issues
+
+The app is set to create DEBUG logs in the following location: `~/Library/Logs/com.anojht.opensourcesynologycloudsyncdecrypttool.log`
+
+If you require help please include your log file when creating issues in this repository.
+
 # Feedback
 
 Feel very free to create a GitHub issue, create a pull request, or drop me a
