@@ -83,7 +83,7 @@ method.set(1)
 
 def load_file():
     fname = tkinter.filedialog.askopenfilename()
-    
+
     if fname:
         try:
             pkfilebox.config(state='normal')
@@ -105,7 +105,7 @@ pufilebox = ttk.Entry(root, state='disabled')
 
 def load_filepu():
     fname = tkinter.filedialog.askopenfilename()
-    
+
     if fname:
         try:
             pufilebox.config(state='normal')
@@ -142,7 +142,7 @@ def load_decrypt_file():
         fname = tkinter.filedialog.askopenfilename()
     else:
         fname = tkinter.filedialog.askdirectory()
-    
+
     if fname:
         try:
             filebox.config(state='normal')
@@ -164,7 +164,7 @@ outputbox = ttk.Entry(root, state='disabled', width=34)
 
 def load_output():
     fname = tkinter.filedialog.askdirectory()
-    
+
     if fname:
         try:
             outputbox.config(state='normal')
@@ -198,7 +198,7 @@ def validate():
                     try:
                         run_tool()
                     except Exception as e:
-                        elogger.error(e)
+                        elogger.error(e, exc_info=e)
                         tkinter.messagebox.showwarning("Decryption", "Failed to decrypt file(s), please raise an issue using the support button located in the about option of the application menu")
                     else:
                         tkinter.messagebox.showinfo("Decryption", "Files have successfully been decrypted and can be found in the destination folder")
@@ -226,7 +226,7 @@ def validate():
                         try:
                             run_tool()
                         except Exception as e:
-                            elogger.error(e)
+                            elogger.error(e, exc_info=e)
                             tkinter.messagebox.showwarning("Decryption", "Failed to decrypt file(s), please raise an issue using the support button located in the about option of the application menu")
                         else:
                             tkinter.messagebox.showinfo("Decryption", "Files have successfully been decrypted and can be found in the destination folder")
@@ -317,7 +317,7 @@ def about_dialog():
     win.title("About")
     win.configure(bg="#e7e7e7")
     win.resizable(0,0)
-    
+
     img = ImageTk.PhotoImage(Image.open("app.gif").resize((128, 128), Image.ANTIALIAS))
     icon = ttk.Label(win, image=img)
     icon.image = img
@@ -331,7 +331,7 @@ def about_dialog():
     license.config(state='disabled', highlightbackground='grey', highlightcolor='grey', borderwidth=1, highlightthickness=1)
     support = ttk.Button(win, text="Support", command=lambda: open_url("https://github.com/anojht/synology-cloud-sync-decrypt-tool/issues"))
     donate = ttk.Button(win, text="Donate", command=lambda: open_url("https://www.paypal.me/Anojh"))
-    
+
     icon.grid(row=0, column=1, padx=10)
     name.grid(row=1, column=1, padx=10)
     author.grid(row=2, column=1)

@@ -31,7 +31,7 @@ LOGGER=logging.getLogger(__name__)
 # pwd and salt must be bytes objects
 def _openssl_kdf(algo, pwd, salt, key_size, iv_size, iteration):
     temp = b''
-    
+
     fd = temp
     while len(fd) < key_size + iv_size:
         try:
@@ -173,14 +173,17 @@ def read_header(f):
         s = f.read(len(MAGIC))
         if s != MAGIC:
                 LOGGER.error('magic should not be ' + str(s) + ' but ' + str(MAGIC))
+                return None
         s = f.read(32)
         magic_hash = hashlib.md5(MAGIC).hexdigest().encode('ascii')
         if s != magic_hash:
                 LOGGER.error('magic hash should not be ' + str(s) + ' but ' + str(magic_hash))
+                return None
 
         header = _read_object_from(f)
         if header['type'] != 'metadata':
                 LOGGER.error('first object must have "metadata" type but found ' + header['type'])
+                return None
         return header
 
 def read_chunks(f):
@@ -203,6 +206,9 @@ def decrypt_stream(instream, outstream, password=None, private_key=None, public_
 
         # create session key and decryptor
         header = read_header(instream)
+        if not header:
+                LOGGER.info('failed to parse header; skipping file...')
+                return
         # TODO: assert version and hash algo
         decrypt_stream.md5_digestor = hashlib.md5()
         if   password != None:
