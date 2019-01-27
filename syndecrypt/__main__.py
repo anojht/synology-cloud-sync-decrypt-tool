@@ -24,6 +24,7 @@ import docopt
 import os
 import logging
 import sys
+from multiprocessing import Pool
 
 import syndecrypt.files as files
 #import files
@@ -68,13 +69,29 @@ def main(args):
             os.mkdir(output_dir)
         else:
             print("Folder already exists!")
-        for root, subdirs, items in os.walk(ff):
-            structure = root.replace(ff, output_dir, 1)
+
+        directories = list(os.walk(ff))
+
+        for input_dir, _, _ in directories:
+            structure = input_dir.replace(ff, output_dir, 1)
             if not os.path.isdir(structure):
                 os.mkdir(structure)
 
-            for filename in items:
-                files.decrypt_file(os.path.join(root, filename), os.path.join(structure, filename), password=password, private_key=private_key, public_key=public_key)
+        decrypt_args = []
+
+        for input_dir, _, filenames in directories:
+            for filename in filenames:
+                decrypt_args.append((
+                    os.path.join(input_dir, filename),
+                    os.path.join(input_dir.replace(ff, output_dir, 1), filename),
+                    password,
+                    private_key,
+                    public_key,
+                ))
+
+        with Pool() as p:
+            p.starmap(files.decrypt_file, decrypt_args)
+
     else:
         files.decrypt_file(ff, os.path.join(output_dir, fp), password=password, private_key=private_key, public_key=public_key)
 
