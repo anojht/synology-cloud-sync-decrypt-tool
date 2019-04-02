@@ -232,12 +232,12 @@ def decrypt_stream(instream, outstream, password=None, private_key=None, public_
                 LOGGER.warning('found session_key_hash %s but expected %s', actual_session_key_hash, header['session_key_hash'])
 
         # decrypt chunks
-        data = b''
+        data = bytearray()
         with util.Lz4Decompressor(decompressed_chunk_handler=outstream_writer_and_md5_digestor) as decompressor:
                 for chunk in read_chunks(instream):
                         if   chunk['type'] == 'metadata':
                                 # decrypt file
-                                decrypted_data = decryptor_update(decryptor, data)
+                                decrypted_data = decryptor_update(decryptor, bytes(data))
                                 decompressor.write(decrypted_data)
                                 #
                                 expected_md5_digest = chunk['file_md5']
