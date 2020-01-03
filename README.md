@@ -1,5 +1,5 @@
 # Synology Cloud Sync Decryption Tool
-Open source version of the Synology Cloud Sync decryption tool with a nice GUI option for MacOS!
+Open source version of the Synology Cloud Sync decryption tool with a nice GUI option for MacOS and Linux!
 
 # Goal
 
@@ -25,13 +25,46 @@ things that might be construed to be illegal.)
 
 # Install
 
-Please note that the app found in the release is set to auto install the necessary dependencies. This is for the average user who may not be savvy or not want to install brew on their mac. If you for some reason do not trust the lz4 binary and Xcode Command Line Tools installer packaged with the app, you can clone the repo, remove the InstallMeFirst.app and follow the instructions below.
+*Install on Mac*
 
 ```
+Please note that the app found in the release is set to auto install the necessary dependencies. 
+This is for the average user who may not be savvy or not want to install brew on their mac. 
+If you for some reason do not trust the lz4 binary and Xcode Command Line Tools installer packaged with the app, you can clone the repo, remove the InstallMeFirst.app and follow the instructions below.
+
 brew install lz4
 brew install python
 # check python 3
 python3 -v
+python3 -m venv ~/syndecrypt-venv
+source ~/syndecrypt-venv/bin/activate
+pip install -r syndecrypt/requirements.txt
+python Synology.py
+```
+
+*Install on Linux*
+```
+Install lz4 from your package manager repository
+For Ubuntu:
+apt-get install lz4
+For Fedora:
+dnf install lz4
+
+Determine the location of lz4:
+which lz4
+/usr/bin/lz4 is the default location in Fedora
+
+For this package to work, you will need to make a symlink for /usr/bin/lz4 to /usr/local/bin/lz4
+ln -s /usr/bin/lz4 /usr/local/bin/lz4
+You can also change the path inside the Synology.py file if you do not want to do the symlink
+
+Install tkinter (UI framework for the project)
+For Ubuntu:
+apt-get install python3-tk
+For Fedora:
+dnf install python3-tkinter
+
+Setup python environment:
 python3 -m venv ~/syndecrypt-venv
 source ~/syndecrypt-venv/bin/activate
 pip install -r syndecrypt/requirements.txt
@@ -51,7 +84,7 @@ If you choose to install dependencies manually as per the instructions above, yo
 
 ## Troubleshooting App Issues
 
-The app is set to create DEBUG logs in the following location: `~/Library/Logs/com.anojht.opensourcesynologycloudsyncdecrypttool.log`
+The app is set to create DEBUG logs in the following location: ~/synologycloudsyncdecrypttool.log
 
 If you require help please include your log file when creating issues in this repository.
 

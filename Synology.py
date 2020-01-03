@@ -34,7 +34,7 @@ root.resizable(0,0)
 root.withdraw()
 
 home_dir = os.path.expanduser('~')
-log_file = os.path.join(home_dir, "Library/Logs/com.anojht.opensourcesynologycloudsyncdecrypttool.log")
+log_file = os.path.join(home_dir, "synologycloudsyncdecrypttool.log")
 
 logging.basicConfig(filename=log_file, level=logging.DEBUG, format='%(asctime)s %(levelname)s %(name)s %(message)s')
 elogger=logging.getLogger('synology_logger')
