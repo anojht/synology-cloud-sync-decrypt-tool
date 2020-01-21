@@ -1,4 +1,4 @@
-pycrypto == 2.6.1
+pycryptodome == 3.8.2
 docopt == 0.6.2
 
 assertpy == 0.9

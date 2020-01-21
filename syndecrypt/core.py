@@ -131,11 +131,6 @@ def _read_object_from(f):
         else:
                 raise Exception('unknown type byte ' + ("0x%02X" % header_byte))
 
-# def _read_dict_from(f, d):
-#         while True:
-#             d,  = _read_object_from2(f, d)
-
-
 def _continue_read_ordered_dict_from(f):
         result = OrderedDict()
         while True:
