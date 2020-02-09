@@ -1,17 +1,17 @@
 import syndecrypt.util as util
-#import util
-#from util import switch
+from syndecrypt.util import switch
 import codecs
 
-from Crypto.Cipher import AES
-from Crypto.Cipher import PKCS1_OAEP
-from Crypto.PublicKey import RSA
+from Cryptodome.Cipher import AES
+from Cryptodome.Cipher import PKCS1_OAEP
+from Cryptodome.PublicKey import RSA
 import hashlib
 
 import logging
 import struct
 from collections import OrderedDict
 import base64
+import binascii
 
 LOGGER=logging.getLogger(__name__)
 
@@ -29,30 +29,30 @@ LOGGER=logging.getLogger(__name__)
 # algorithm to generate key+iv from the password.
 
 # pwd and salt must be bytes objects
-def _openssl_kdf(algo, pwd, salt, key_size, iv_size, iteration):
-    temp = b''
+def _openssl_kdf(algo, pwd, salt, key_size, iv_size):
+    count = 1 if salt == b'' else 1000
 
+    temp = b''
     fd = temp
     while len(fd) < key_size + iv_size:
         try:
-            pwd = pwd.encode()
+                pwd = pwd.encode()
         except AttributeError:
-            pass
-        temp = _hasher(algo, temp + pwd + salt, iteration)
+                pass
+        hashed_count_times = temp + pwd + salt
+        for i in range(count):
+            hashed_count_times = _hasher(algo, hashed_count_times)
+        temp = hashed_count_times
         fd += temp
 
     key = fd[0:key_size]
     iv = fd[key_size:key_size+iv_size]
-
     return key, iv
 
-def _hasher(algo, data, iteration):
-    digest = data
-    for i in range(iteration):
-        h = hashlib.new(algo)
-        h.update(digest)
-        digest = h.digest()
-    return digest
+def _hasher(algo, data):
+    h = hashlib.new(algo)
+    h.update(data)
+    return h.digest()
 
 # From pyaes, since pycrypto does not implement padding
 
@@ -69,37 +69,34 @@ def strip_PKCS7_padding(data):
 
 
 def decrypted_with_password(ciphertext, password, salt):
-        decryptor = _decryptor_with_keyiv(_csenc_pbkdf(password, salt, iteration=1000))
-        plaintext = decryptor_update(decryptor, ciphertext)
+        decryptor = decryptor_with_password(password, salt)
+        plaintext = strip_PKCS7_padding(decryptor.decrypt(ciphertext))
         return plaintext
 
-def decrypted_with_private_key(ciphertext, private_key):
-        return PKCS1_OAEP.new(RSA.importKey(private_key)).decrypt(ciphertext)
+def decryptor_with_password(password, salt):
+    return _decryptor_with_keyiv(_csenc_pbkdf(password, salt))
 
-def decryptor_with_password(password, salt=b''):
-        return _decryptor_with_keyiv(_csenc_pbkdf(codecs.decode(password, 'hex_codec'), salt))
-
-def _csenc_pbkdf(password, salt, iteration=1):
+def _csenc_pbkdf(password, salt):
         AES_KEY_SIZE_BITS = 256
         AES_IV_LENGTH_BYTES = AES.block_size
         assert AES_IV_LENGTH_BYTES == 16
-        (key, iv) = _openssl_kdf('md5', password, salt, AES_KEY_SIZE_BITS//8, AES_IV_LENGTH_BYTES, iteration)
+        (key, iv) = _openssl_kdf('md5', password, salt, AES_KEY_SIZE_BITS//8, AES_IV_LENGTH_BYTES)
         return (key, iv)
 
 def _decryptor_with_keyiv(key_iv_pair):
         (key, iv) = key_iv_pair
         return AES.new(key, AES.MODE_CBC, iv)
 
-def decryptor_update(decryptor, ciphertext):
-        return strip_PKCS7_padding(decryptor.decrypt(ciphertext))
+def decrypted_with_private_key(ciphertext, private_key):
+        return PKCS1_OAEP.new(RSA.importKey(private_key)).decrypt(ciphertext)
 
 def salted_hash_of(salt, data):
         m = hashlib.md5()
         m.update(salt.encode('ascii'))
         try:
-            data = data.encode()
+                data = data.encode()
         except AttributeError:
-            pass
+                pass
         m.update(data)
         return salt + m.hexdigest()
 
@@ -162,30 +159,25 @@ def bytes_to_bigendian_int(b):
         import binascii
         return int(binascii.hexlify(b), 16) if b != b'' else 0
 
-def read_header(f):
+def decode_csenc_stream(f):
         MAGIC = b'__CLOUDSYNC_ENC__'
 
         s = f.read(len(MAGIC))
         if s != MAGIC:
                 LOGGER.error('magic should not be ' + str(s) + ' but ' + str(MAGIC))
-                return None
         s = f.read(32)
         magic_hash = hashlib.md5(MAGIC).hexdigest().encode('ascii')
         if s != magic_hash:
                 LOGGER.error('magic hash should not be ' + str(s) + ' but ' + str(magic_hash))
-                return None
 
-        header = _read_object_from(f)
-        if header['type'] != 'metadata':
-                LOGGER.error('first object must have "metadata" type but found ' + header['type'])
-                return None
-        return header
+        for obj in _read_objects_from(f):
+            assert isinstance(obj, dict)
+            if obj['type'] == 'metadata':
+                for (k,v) in obj.items():
+                    if k != 'type': yield (k,v)
+            elif obj['type'] == 'data':
+                yield (None, obj['data'])
 
-def read_chunks(f):
-        while True:
-                chunk = _read_object_from(f)
-                if not chunk: return
-                yield chunk
 
 def decrypt_stream(instream, outstream, password=None, private_key=None, public_key=None):
 
@@ -193,55 +185,82 @@ def decrypt_stream(instream, outstream, password=None, private_key=None, public_
         decryptor = None
         decrypt_stream.md5_digestor = None # special kind of local variable...
         expected_md5_digest = None
+        enc_key1_bytes = None
+        enc_key2_bytes = None
+        salt = b''
+        session_key_hash = None
 
         def outstream_writer_and_md5_digestor(decompressed_chunk):
                 outstream.write(decompressed_chunk)
                 if decrypt_stream.md5_digestor != None:
                         decrypt_stream.md5_digestor.update(decompressed_chunk)
-
-        # create session key and decryptor
-        header = read_header(instream)
-        if not header:
-                LOGGER.info('failed to parse header; skipping file...')
-                return
-        # TODO: assert version and hash algo
-        decrypt_stream.md5_digestor = hashlib.md5()
-        if   password != None:
-                # password
-                actual_password_hash = salted_hash_of(header['key1_hash'][:10], password)
-                if header['key1_hash'] != actual_password_hash:
-                        LOGGER.warning('found key1_hash %s but expected %s', actual_password_hash, header['key1_hash'])
-                session_key = decrypted_with_password(base64.b64decode(header['enc_key1'].encode('ascii')), password, header['salt'].encode('ascii'))
-                decryptor = decryptor_with_password(session_key)
-        elif private_key != None and public_key != None:
-                # RSA
-                actual_public_key_hash = salted_hash_of(header['key2_hash'][:10], public_key)
-                if header['key2_hash'] != actual_public_key_hash:
-                        LOGGER.warning('found key2_hash %s but expected %s', actual_public_key_hash, header['key2_hash'])
-                session_key = decrypted_with_private_key(base64.b64decode(header['enc_key2'].encode('ascii')), private_key)
-                decryptor = decryptor_with_password(session_key)
-        else:
-                raise Exception("Key material is not found")
-        actual_session_key_hash = salted_hash_of(header['session_key_hash'][:10], session_key)
-        if header['session_key_hash'] != actual_session_key_hash:
-                LOGGER.warning('found session_key_hash %s but expected %s', actual_session_key_hash, header['session_key_hash'])
-
-        # decrypt chunks
-        data = bytearray()
+                        
         with util.Lz4Decompressor(decompressed_chunk_handler=outstream_writer_and_md5_digestor) as decompressor:
-                for chunk in read_chunks(instream):
-                        if   chunk['type'] == 'metadata':
-                                # decrypt file
-                                decrypted_data = decryptor_update(decryptor, bytes(data))
-                                decompressor.write(decrypted_data)
-                                #
-                                expected_md5_digest = chunk['file_md5']
-                                break
-                        elif chunk['type'] == 'data':
-                                data += chunk['data']
-                        else:
-                                raise Exception("Bad chunk found: " + str(chunk))
-        # verify md5
+                decrypted_chunk = None
+                for (key,value) in decode_csenc_stream(instream):
+                        for case in switch(key):
+                                if case('digest'):
+                                        if value != 'md5':
+                                                LOGGER.warning('found unexpected digest "%s": cannot verify checksum', value)
+                                        decrypt_stream.md5_digestor = hashlib.md5()
+                                        break
+                                if case('enc_key1'):
+                                        enc_key1_bytes = base64.b64decode(value.encode('ascii'))
+                                        break
+                                if case('enc_key2'):
+                                        enc_key2_bytes = base64.b64decode(value.encode('ascii'))
+                                        break
+                                if case('key1_hash'):
+                                        if password != None:
+                                                actual_password_hash = salted_hash_of(value[:10], password)
+                                                if value != actual_password_hash:
+                                                        LOGGER.warning('found key1_hash %s but expected %s', actual_password_hash, value)
+                                        break
+                                if case('key2_hash'):
+                                        # TODO: verify some public/private key pair hash here
+                                        break
+                                if case('salt'):
+                                        salt = value.encode('ascii')
+                                        assert isinstance(salt, bytes)
+                                        break
+                                if case('session_key_hash'):
+                                        session_key_hash = value
+                                        break
+                                if case('version'):
+                                        version = value
+                                        expected_version_numbers = [OrderedDict([('major',1),('minor',0)]), OrderedDict([('major',3),('minor',0)]), OrderedDict([('major',3),('minor',1)])]
+                                        if version not in expected_version_numbers:
+                                                raise Exception('found version number ' + str(value) + \
+                                                        ' instead of one of the expected ' + str(expected_version_numbers))
+                                        if (version['major'] > 1) != (salt != b''):
+                                                version_string = '%d.%d' % (version['major'], version['minor'])
+                                                LOGGER.warning('salt is expected in version 3+ (version: %s, salt present: %s)', version_string, (salt != b''))
+                                        break
+                                if case(None):
+                                        if decryptor == None:
+                                                if password != None and enc_key1_bytes != None:
+                                                        session_key = decrypted_with_password(enc_key1_bytes, password, salt)
+                                                elif private_key != None and enc_key2_bytes != None:
+                                                        session_key = decrypted_with_private_key(enc_key2_bytes, private_key)
+                                                if session_key == None:
+                                                        raise Exception('not enough information to decrypt data: need either password and enc_key1 or private key and enc_key2')
+                                                if session_key_hash == None:
+                                                        LOGGER.warning('did not find session_key_hash to verify the session key')
+                                                else:
+                                                        actual_session_key_hash = salted_hash_of(session_key_hash[:10], session_key)
+                                                        if session_key_hash != actual_session_key_hash:
+                                                                LOGGER.warning('found session_key_hash %s but expected %s', actual_session_key_hash, session_key_hash)
+                                                decryptor = decryptor_with_password(binascii.unhexlify(session_key) if salt else session_key, salt=b'')
+                                        if decrypted_chunk:
+                                                decompressor.write(decrypted_chunk)
+                                        decrypted_chunk = decryptor.decrypt(value)
+                                        break
+                                if case('file_md5'):
+                                        expected_md5_digest = value
+                                        break
+                if decrypted_chunk:
+                        decompressor.write(strip_PKCS7_padding(decrypted_chunk))
+
         if decrypt_stream.md5_digestor != None and expected_md5_digest != None:
                 actual_md5_digest = decrypt_stream.md5_digestor.hexdigest()
                 if actual_md5_digest != expected_md5_digest:
