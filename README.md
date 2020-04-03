@@ -1,3 +1,10 @@
+[![Github All Releases](https://img.shields.io/github/downloads/anojht/synology-cloud-sync-decrypt-tool/total.svg)](https://github.com/anojht/synology-cloud-sync-decrypt-tool)
+
+
+[![Paypal](https://img.shields.io/badge/paypal-donate-yellow.svg)](https://paypal.me/Anojh)
+
+___
+
 # Synology Cloud Sync Decryption Tool
 Open source version of the Synology Cloud Sync decryption tool with a nice GUI option for MacOS and Linux!
 
