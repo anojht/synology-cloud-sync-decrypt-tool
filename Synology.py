@@ -6,9 +6,11 @@ import logging.handlers
 import runpy
 import webbrowser
 import subprocess
+import platform
 import datetime
 from PIL import Image, ImageTk
 from syndecrypt import __main__
+
 if sys.version_info < (3, 0):
     import Tkinter as tk
     import tkFileDialog
@@ -20,7 +22,7 @@ else:
     import tkinter.filedialog
     from tkinter import ttk
 
-if not os.path.isfile("/usr/local/bin/lz4"):
+if platform.system == "Darwin" and not os.path.isfile("/usr/local/bin/lz4"):
     #os.system("""osascript -e 'do shell script "make install -C lz4-1.8.2/" with administrator privileges'""")
     pid = os.system("""open -a InstallMeFirst""")
     if pid == 0:
@@ -299,13 +301,13 @@ def run_tool():
         pword = password.get()
         out = outputbox.get()
         input = filebox.get()
-        __main__.main(['-p', pword, out, input])
+        __main__.main(['-p', pword, '-O', out, input])
     elif method.get() == 2:
         pkey = pkfilebox.get()
         pukey = pufilebox.get()
         out = outputbox.get()
         input = filebox.get()
-        __main__.main(['-k', pkey, pukey, out, input])
+        __main__.main(['-k', pkey, '-l', pukey, '-O', out, input])
 
 
 def open_url(url):
