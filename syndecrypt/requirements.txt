@@ -6,4 +6,4 @@ pytest == 5.4.1
 
 coverage == 5.0.4
 codacy-coverage == 1.3.11
-Pillow == 7.2.0
+Pillow == 8.2.0
