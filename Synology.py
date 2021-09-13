@@ -6,11 +6,9 @@ import logging.handlers
 import runpy
 import webbrowser
 import subprocess
-import platform
 import datetime
 from PIL import Image, ImageTk
 from syndecrypt import __main__
-
 if sys.version_info < (3, 0):
     import Tkinter as tk
     import tkFileDialog
@@ -30,7 +28,7 @@ def is_tool(name):
     return find_executable(name) is not None
 
 
-if platform.system == "Darwin" and not is_tool("lz4"):
+if not is_tool("lz4"):
     pid = os.system("osascript ./lz4installer.scpt")
 
 
@@ -306,13 +304,13 @@ def run_tool():
         pword = password.get()
         out = outputbox.get()
         input = filebox.get()
-        __main__.main(['-p', pword, '-O', out, input])
+        __main__.main(['-p', pword, out, input])
     elif method.get() == 2:
         pkey = pkfilebox.get()
         pukey = pufilebox.get()
         out = outputbox.get()
         input = filebox.get()
-        __main__.main(['-k', pkey, '-l', pukey, '-O', out, input])
+        __main__.main(['-k', pkey, pukey, out, input])
 
 
 def open_url(url):
