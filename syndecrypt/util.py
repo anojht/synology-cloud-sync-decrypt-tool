@@ -67,10 +67,7 @@ class FilterSubprocess:
                 self.proc.stdin.close()
                 self.stdout_handler_thread.join()
 
-
+              
 class Lz4Decompressor(FilterSubprocess):
         def __init__(self, decompressed_chunk_handler):
-            if platform.system == "Darwin":
-                FilterSubprocess.__init__(self, ['/usr/local/bin/lz4', '-d'], stdout_handler=decompressed_chunk_handler)
-            else:
                 FilterSubprocess.__init__(self, ['lz4', '-d'], stdout_handler=decompressed_chunk_handler)
