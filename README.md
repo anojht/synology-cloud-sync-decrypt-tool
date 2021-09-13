@@ -45,6 +45,7 @@ If you for some reason do not trust the lz4 binary that will be fetched from the
 
 brew install lz4
 brew install python
+brew install python-tk
 # check python 3
 python3 -v
 python3 -m venv ~/syndecrypt-venv
