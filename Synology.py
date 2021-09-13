@@ -20,16 +20,13 @@ else:
     import tkinter.filedialog
     from tkinter import ttk
 
-if not os.path.isfile("/usr/local/bin/lz4"):
-    #os.system("""osascript -e 'do shell script "make install -C lz4-1.8.2/" with administrator privileges'""")
-    pid = os.system("""open -a InstallMeFirst""")
-    if pid == 0:
-        sys.exit(0)
+if os.path.isfile("/usr/local/bin/lz4"):
+    pid = os.system("osascript ./lz4installer.scpt")
 
 
 root = tk.Tk()
 root.title("Cloud Sync Decryption Tool")
-root.configure(bg='#e7e7e7')
+root.configure()
 root.resizable(0,0)
 root.withdraw()
 
@@ -44,8 +41,8 @@ top.config(width=100)
 top.resizable(0,0)
 top.attributes('-topmost', True)
 top.title("DISCLAIMER")
-top.configure(bg="#e7e7e7")
-msg = tk.Message(top, background="#e7e7e7", text="This software is provided for free. If you have paid for or have been asked to pay for this software, it is likely not legitimate. Please discontinue using this software and seek help from proper authorities.")
+top.configure()
+msg = tk.Message(top, text="This software is provided for free. If you have paid for or have been asked to pay for this software, it is likely not legitimate. Please discontinue using this software and seek help from proper authorities.")
 msg.pack(padx=10, pady=5)
 
 def start():
@@ -315,7 +312,7 @@ def open_url(url):
 def about_dialog():
     win = tk.Toplevel()
     win.title("About")
-    win.configure(bg="#e7e7e7")
+    win.configure()
     win.resizable(0,0)
 
     img = ImageTk.PhotoImage(Image.open("app.gif").resize((128, 128), Image.ANTIALIAS))
