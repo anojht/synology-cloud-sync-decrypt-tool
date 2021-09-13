@@ -84,6 +84,25 @@ pip install -r syndecrypt/requirements.txt
 python Synology.py
 ```
 
+## Usage
+
+### Start UI
+
+```bash
+python Synology.py
+``` 
+
+
+### CLI usage
+
+```bash
+# decrypt file mySecretFile into folder decryptedFiles using password MY_SECRET_PASSWORD
+python -m syndecrypt -p 'MY_SECRET_PASSWORD' -O decrytptedFiles/ mySecretFile
+
+# decrypt alls files from folder mySecretFiles into folder decryptedFiles using private/public key files
+python -m syndecrypt -k private.pem -l public.pem -O decrytptedFiles/ mySecretFiles/
+```
+
 ## Troubleshooting Installation Errors
 
 If you choose to install dependencies manually as per the instructions above, you may need to build some dependencies from source. If `pip install` is dying with clang errors during this process, try following these steps:

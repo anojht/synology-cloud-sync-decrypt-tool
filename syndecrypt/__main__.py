@@ -4,14 +4,14 @@ synology-decrypt:
  Synology's Cloud Sync encryption algorithm
 
 Usage:
-  syndecrypt (-p <password-file> | -k <private.pem> -l <public.pem>) -O <directory> <encrypted-file>...
+  syndecrypt (-p <password> | -k <private.pem> -l <public.pem>) -O <directory> <encrypted-file>...
   syndecrypt (-h | --help)
 
 Options:
   -O <directory> --output-directory=<directory>
                            Output directory
-  -p <password-file> --password-file=<password-file>
-                           The file containing the decryption password
+  -p <password> --password=<password>
+                           The decryption password
   -k <private.pem> --private-key-file=<private.pem>
                            The file containing the decryption private key
   -l <private.pem> --public-key-file=<public.pem>
@@ -29,18 +29,14 @@ from multiprocessing import Pool
 import syndecrypt.files as files
 #import files
 import syndecrypt.util as util
-#from syndecrypt import util
+
 
 def main(args):
+    arguments = docopt.docopt(__doc__, args)
 
-    if args[0] == "-p":
-        arguments = {"--password-file": args[1], "--private-key-file": None, "--public-key-file": None, "--output-directory": args[2], "<encrypted-file>": args[3]}
-    elif args[0] == "-k":
-        arguments = {"--password-file": None, "--private-key-file": args[1], "--public-key-file": args[2], "--output-directory": args[3], "<encrypted-file>": args[4]}
-
-    password_file_name = arguments['--password-file']
-    if password_file_name != None:
-        password = arguments['--password-file']
+    password = arguments['--password']
+    if password != None:
+        password = arguments['--password']
     else: password = None
 
     private_key_file_name = arguments['--private-key-file']
@@ -59,41 +55,41 @@ def main(args):
     logging.getLogger().setLevel(logging.INFO)
     logging.basicConfig(format='%(levelname)s: %(message)s')
 
-    f = arguments['<encrypted-file>']
-    ff = os.path.abspath(f)
-    fp = os.path.basename(ff)
+    for f in arguments['<encrypted-file>']:
+        ff = os.path.abspath(f)
+        fp = os.path.basename(ff)
 
-    if os.path.isdir(ff):
-        if not os.path.isdir(os.path.join(output_dir, fp)):
-            output_dir = os.path.join(output_dir, fp)
-            os.mkdir(output_dir)
+        if os.path.isdir(ff):
+            if not os.path.isdir(os.path.join(output_dir, fp)):
+                output_dir = os.path.join(output_dir, fp)
+                os.mkdir(output_dir)
+            else:
+                print("Folder already exists!")
+
+            directories = list(os.walk(ff))
+
+            for input_dir, _, _ in directories:
+                structure = input_dir.replace(ff, output_dir, 1)
+                if not os.path.isdir(structure):
+                    os.mkdir(structure)
+
+            decrypt_args = []
+
+            for input_dir, _, filenames in directories:
+                for filename in filenames:
+                    decrypt_args.append((
+                        os.path.join(input_dir, filename),
+                        os.path.join(input_dir.replace(ff, output_dir, 1), filename),
+                        password,
+                        private_key,
+                        public_key,
+                    ))
+
+            with Pool() as p:
+                p.starmap(files.decrypt_file, decrypt_args)
+
         else:
-            print("Folder already exists!")
-
-        directories = list(os.walk(ff))
-
-        for input_dir, _, _ in directories:
-            structure = input_dir.replace(ff, output_dir, 1)
-            if not os.path.isdir(structure):
-                os.mkdir(structure)
-
-        decrypt_args = []
-
-        for input_dir, _, filenames in directories:
-            for filename in filenames:
-                decrypt_args.append((
-                    os.path.join(input_dir, filename),
-                    os.path.join(input_dir.replace(ff, output_dir, 1), filename),
-                    password,
-                    private_key,
-                    public_key,
-                ))
-
-        with Pool() as p:
-            p.starmap(files.decrypt_file, decrypt_args)
-
-    else:
-        files.decrypt_file(ff, os.path.join(output_dir, fp), password=password, private_key=private_key, public_key=public_key)
+            files.decrypt_file(ff, os.path.join(output_dir, fp), password=password, private_key=private_key, public_key=public_key)
 
 
 if __name__ == '__main__':
