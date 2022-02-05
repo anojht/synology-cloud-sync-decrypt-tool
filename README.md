@@ -63,26 +63,16 @@ apt-get install lz4
 For Fedora:
 dnf install lz4
 
-Determine the location of lz4:
-which lz4
-/usr/bin/lz4 is the default location in Fedora
-
-For this package to work, you will need to make a symlink for /usr/bin/lz4 to /usr/local/bin/lz4
-ln -s /usr/bin/lz4 /usr/local/bin/lz4
-You can also change the path inside the Synology.py file if you do not want to do the symlink
-
-Install tkinter (UI framework for the project)
-For Ubuntu:
-apt-get install python3-tk
-For Fedora:
-dnf install python3-tkinter
-
-Setup python environment:
-python3 -m venv ~/syndecrypt-venv
-source ~/syndecrypt-venv/bin/activate
-pip install -r syndecrypt/requirements.txt
-python Synology.py
+Afterwards just:
+pip install .
 ```
+
+_Run_
+After installation you should have 2 commands:
+`synology_cloud_decrypt` which starts the gui
+and `syndecrypt` which is a command-line tool
+
+For the command-line tool, run `syndecrypt -h` to get the help.
 
 ## Troubleshooting Installation Errors
 

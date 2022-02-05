@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "syndecrypt"
+version = "9.1.dev0"
+description = "Decrypt synology cloud station files."
+authors = ["Anojh Thayaparan <athayapa@sfu.ca>"]
+license = "GPLv3"
+
+
+packages = [
+    { include="syndecrypt", from="." },
+]
+
+[tool.poetry.scripts]
+syndecrypt = "syndecrypt.__main__:__main__"
+synology_cloud_decrypt = "syndecrypt.SynologyCloudDecrypt:main"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pycryptodomex = "^3.10"
+docopt = "^0.6.2"
+assertpy = "^1.1"
+pytest = "^6.2.5"
+coverage = "^5.5"
+codacy-coverage = "^1.3.11"
+Pillow = "^8.3.2"
+tk = "^0.1.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -1,9 +1,11 @@
 import logging
 
-LOGGER=logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
+
 
 def _binary_contents_of(file_name):
-        with open(file_name, 'rb') as f: return f.read()
+    with open(file_name, "rb") as f:
+        return f.read()
 
 
 # From http://code.activestate.com/recipes/410692/
@@ -23,10 +25,12 @@ class switch(object):
 
     def match(self, *args):
         """Indicate whether or not to enter a case suite"""
+
         if self.fall or not args:
             return True
-        elif self.value in args: # changed for v1.5, see below
+        elif self.value in args:  # changed for v1.5, see below
             self.fall = True
+
             return True
         else:
             return False
@@ -35,38 +39,43 @@ class switch(object):
 from subprocess import Popen, PIPE
 import threading
 
+
 class FilterSubprocess:
-        """
-        A wrapper around Popen(stdin=PIPE,stdout=PIPE) where stdout
-        is sent to the provided callback handler.
-        """
+    """
+    A wrapper around Popen(stdin=PIPE,stdout=PIPE) where stdout
+    is sent to the provided callback handler.
+    """
 
-        def __init__(self, command_line, stdout_handler):
-                self.stdout_handler = stdout_handler
-                self.proc = Popen(args=command_line, stdin=PIPE, stdout=PIPE)
-                self.stdout_handler_thread = threading.Thread(target=self.stdout_handler_loop)
-                self.stdout_handler_thread.start()
+    def __init__(self, command_line, stdout_handler):
+        self.stdout_handler = stdout_handler
+        self.proc = Popen(args=command_line, stdin=PIPE, stdout=PIPE)
+        self.stdout_handler_thread = threading.Thread(target=self.stdout_handler_loop)
+        self.stdout_handler_thread.start()
 
-        def __enter__(self):
-                return self
+    def __enter__(self):
+        return self
 
-        def __exit__(self, exc_type, exc_value, traceback):
-                self.close()
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
 
-        def stdout_handler_loop(self):
-                while True:
-                        c = self.proc.stdout.read(1024)
-                        if len(c) == 0: break
-                        self.stdout_handler(c)
+    def stdout_handler_loop(self):
+        while True:
+            c = self.proc.stdout.read(1024)
 
-        def write(self, b):
-                self.proc.stdin.write(b)
+            if len(c) == 0:
+                break
+            self.stdout_handler(c)
 
-        def close(self):
-                self.proc.stdin.close()
-                self.stdout_handler_thread.join()
+    def write(self, b):
+        self.proc.stdin.write(b)
+
+    def close(self):
+        self.proc.stdin.close()
+        self.stdout_handler_thread.join()
 
 
 class Lz4Decompressor(FilterSubprocess):
-        def __init__(self, decompressed_chunk_handler):
-                FilterSubprocess.__init__(self, ['lz4', '-d'], stdout_handler=decompressed_chunk_handler)
+    def __init__(self, decompressed_chunk_handler):
+        FilterSubprocess.__init__(
+            self, ["lz4", "-d"], stdout_handler=decompressed_chunk_handler
+        )
