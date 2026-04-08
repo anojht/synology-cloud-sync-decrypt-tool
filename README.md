@@ -36,64 +36,62 @@ things that might be construed to be illegal.)
 
 # Install
 
-_Install on Mac_
+## Use the prebuilt macOS app
 
-```
-Please note that the app found in the release is set to auto install the necessary dependencies. (LZ4 decompression library and Xcode Command Line Tools)
-This is for the average user who may not be savvy or not want to install brew on their mac.
-If you for some reason do not trust the lz4 binary that will be fetched from the source Github repository and installed with the AppleScript bundled with the app, you can clone the repo, remove the lz4installer.scpt and follow the instructions below.
+Download the latest `.app` from the [Releases](https://github.com/anojht/synology-cloud-sync-decrypt-tool/releases) page, drag it to `/Applications`, and run it. Apple Silicon (M1/M2/M3) and Intel are both supported. No external dependencies, no `lz4` install, no AppleScript installer — everything is bundled.
 
-brew install lz4
-brew install python
-brew install python-tk
-# check python 3
-python3 -v
-python3 -m venv ~/syndecrypt-venv
-source ~/syndecrypt-venv/bin/activate
-pip install -r syndecrypt/requirements.txt
-python Synology.py
+## Run from source
+
+Requires [`uv`](https://github.com/astral-sh/uv) (`brew install uv`) and `make`.
+
+```bash
+git clone https://github.com/anojht/synology-cloud-sync-decrypt-tool.git
+cd synology-cloud-sync-decrypt-tool
+make sync
+make run
 ```
 
-_Install on Linux_
+`uv` provisions Python 3.12, creates an isolated `.venv/`, and installs all dependencies (including `lz4`, `Pillow`, `pycryptodomex`) — nothing leaks into your system Python.
 
-```
-Install lz4 from your package manager repository
-For Ubuntu:
-apt-get install lz4
-For Fedora:
-dnf install lz4
+## Run tests
 
-Determine the location of lz4:
-which lz4
-/usr/bin/lz4 is the default location in Fedora
-
-For this package to work, you will need to make a symlink for /usr/bin/lz4 to /usr/local/bin/lz4
-ln -s /usr/bin/lz4 /usr/local/bin/lz4
-You can also change the path inside the Synology.py file if you do not want to do the symlink
-
-Install tkinter (UI framework for the project)
-For Ubuntu:
-apt-get install python3-tk
-For Fedora:
-dnf install python3-tkinter
-
-Setup python environment:
-python3 -m venv ~/syndecrypt-venv
-source ~/syndecrypt-venv/bin/activate
-pip install -r syndecrypt/requirements.txt
-python Synology.py
+```bash
+make test
 ```
 
-## Troubleshooting Installation Errors
+## Build the macOS app yourself
 
-If you choose to install dependencies manually as per the instructions above, you may need to build some dependencies from source. If `pip install` is dying with clang errors during this process, try following these steps:
+The build is driven by `make` (run `make help` to see every target).
 
-1. Identify which dependency is failing or missing, such as `libgmp`.
-2. Ensure you have a suitable copy of the dependency, such as with Homebrew (e.g. `brew install gmp`).
-3. Identify where Homebrew installs the headers and libraries (usually `/usr/local/include` and `/usr/local/lib`, respectively).
-4. Provide pip with arguments to pass to clang specifying these paths.
-   - [Using ~/.pydistutils.cfg](https://stackoverflow.com/a/19253719)
-   - [Using `--global-option`](https://stackoverflow.com/a/28981343)
+### Build for the architecture you're on
+
+```bash
+make build-arm64    # Apple Silicon (M1 / M2 / M3)
+make build-x86_64   # Intel (or Apple Silicon under Rosetta 2)
+```
+
+The output is at `dist/Open Source Synology Cloud Sync Decryption Tool.app`. Verify the architecture with:
+
+```bash
+file "dist/Open Source Synology Cloud Sync Decryption Tool.app/Contents/MacOS/Open Source Synology Cloud Sync Decryption Tool"
+```
+
+> **Building x86_64 on Apple Silicon** requires Rosetta 2:
+> ```bash
+> softwareupdate --install-rosetta --agree-to-license
+> ```
+
+### Build a release for both architectures
+
+`make dist-all` builds both architectures back-to-back and produces ready-to-publish zips in `dist-zips/`:
+
+```bash
+make dist-all
+# →  dist-zips/Open Source Synology Cloud Sync Decryption Tool-arm64.zip
+#    dist-zips/Open Source Synology Cloud Sync Decryption Tool-x86_64.zip
+```
+
+Each `make build-*` and `make dist-*` invocation wipes `.venv/` and `dist/` so the build environment matches the target architecture (uv pulls per-arch wheels for `lz4`, `Pillow`, and `pycryptodomex`).
 
 ## Troubleshooting App Issues
 

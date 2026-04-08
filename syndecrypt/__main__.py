@@ -24,7 +24,7 @@ import docopt
 import os
 import logging
 import sys
-from multiprocessing import Pool
+from multiprocessing.pool import ThreadPool
 
 import syndecrypt.files as files
 #import files
@@ -81,6 +81,11 @@ def main(args):
 
         for input_dir, _, filenames in directories:
             for filename in filenames:
+                # Skip macOS / filesystem metadata that isn't a Synology
+                # encrypted file. Otherwise the decryptor explodes on
+                # garbage input.
+                if filename in (".DS_Store", "Thumbs.db") or filename.startswith("._"):
+                    continue
                 decrypt_args.append((
                     os.path.join(input_dir, filename),
                     os.path.join(input_dir.replace(ff, output_dir, 1), filename),
@@ -89,7 +94,12 @@ def main(args):
                     public_key,
                 ))
 
-        with Pool() as p:
+        # ThreadPool (not Pool) so we get parallelism without spawning new
+        # processes — critical inside a py2app bundle where re-execing the
+        # main app binary would relaunch the GUI. AES (pycryptodomex) and
+        # lz4 (lz4.frame) both release the GIL in their C extensions, so
+        # threads parallelise the actual work just fine.
+        with ThreadPool() as p:
             p.starmap(files.decrypt_file, decrypt_args)
 
     else:

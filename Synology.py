@@ -1,35 +1,46 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
+import glob
+import re
+import subprocess
+
+# When running as a py2app bundle, point Tcl/Tk at the script directories
+# bundled into ``Contents/Resources/lib/``. Must happen before tkinter (or
+# PIL.ImageTk, which imports tkinter) is loaded. Auto-detect the version
+# because arm64 PBS Python ships Tk 8.6 and x86_64 PBS Python ships Tk 9.0,
+# so the directory names differ between architectures.
+if getattr(sys, "frozen", None) == "macosx_app":
+    _resources = os.path.normpath(
+        os.path.join(os.path.dirname(sys.executable), "..", "Resources")
+    )
+
+    def _highest_versioned_dir(prefix):
+        candidates = []
+        for path in glob.glob(os.path.join(_resources, "lib", prefix + "[0-9]*.[0-9]*")):
+            m = re.fullmatch(re.escape(prefix) + r"(\d+)\.(\d+)", os.path.basename(path))
+            if m and os.path.isdir(path):
+                candidates.append(((int(m.group(1)), int(m.group(2))), path))
+        candidates.sort()
+        return candidates[-1][1] if candidates else None
+
+    _tcl = _highest_versioned_dir("tcl")
+    _tk = _highest_versioned_dir("tk")
+    if _tcl:
+        os.environ.setdefault("TCL_LIBRARY", _tcl)
+    if _tk:
+        os.environ.setdefault("TK_LIBRARY", _tk)
+
 import logging
 import logging.handlers
-import runpy
 import webbrowser
-import subprocess
 import datetime
 from PIL import Image, ImageTk
 from syndecrypt import __main__
-if sys.version_info < (3, 0):
-    import Tkinter as tk
-    import tkFileDialog
-    import tkMessageBox
-    from Tkinter import ttk
-else:
-    import tkinter as tk
-    import tkinter.messagebox
-    import tkinter.filedialog
-    from tkinter import ttk
-
-def is_tool(name):
-    """Check whether `name` is on PATH."""
-
-    from distutils.spawn import find_executable
-
-    return find_executable(name) is not None
-
-
-if not is_tool("lz4"):
-    pid = os.system("osascript ./lz4installer.scpt")
+import tkinter as tk
+import tkinter.messagebox
+import tkinter.filedialog
+from tkinter import ttk
 
 
 root = tk.Tk()
@@ -38,11 +49,55 @@ root.configure()
 root.resizable(0,0)
 root.withdraw()
 
+# Tk on macOS unconditionally creates a *slave* Tcl interpreter for its
+# built-in console subsystem during ``TkpInit``. Normally Tk's bundled
+# ``console.tcl`` script hides the slave's default root window — but we
+# stub that script to a no-op (it crashes on macOS 26 because Tk's menubar
+# code passes a nil title to ``[NSMenuItem initWithTitle:]``), so the
+# slave interpreter's empty root window stays visible as ``tk #2``.
+# Use Tk's ``send`` IPC to withdraw it from our interpreter.
+try:
+    _our_appname = root.tk.call('tk', 'appname')
+    _peers = root.tk.call('winfo', 'interps')
+    for _peer in (_peers if isinstance(_peers, tuple) else _peers.split()):
+        if _peer == _our_appname:
+            continue
+        try:
+            root.tk.call('send', _peer, 'wm', 'withdraw', '.')
+        except tk.TclError:
+            pass
+except tk.TclError:
+    pass
+
+# Resources packaged alongside this script. In a py2app .app the cwd is
+# ``/`` when launched from Finder, so any relative resource path breaks.
+_RESOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 home_dir = os.path.expanduser('~')
 log_file = os.path.join(home_dir, "synologycloudsyncdecrypttool.log")
 
 logging.basicConfig(filename=log_file, level=logging.DEBUG, format='%(asctime)s %(levelname)s %(name)s %(message)s')
 elogger=logging.getLogger('synology_logger')
+
+
+def _bring_app_to_front():
+    """macOS-only: nudge LaunchServices to make this process frontmost.
+    Apps launched from Finder sometimes open behind whatever was already
+    focused, requiring a Dock click to surface them. Uses ``open -b`` which
+    routes through LaunchServices and needs no automation permissions —
+    unlike ``tell application "System Events"``."""
+    if sys.platform != "darwin":
+        return
+    try:
+        subprocess.run(
+            ["/usr/bin/open", "-b", "com.anojht.osx.synologycloudsyncdecryptiontool"],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception:
+        logging.exception("failed to bring app to front")
+
 
 top = tk.Toplevel()
 top.config(width=100)
@@ -62,6 +117,12 @@ def start():
 button = ttk.Button(top, text="OK", command=start)
 button.pack(pady=5)
 top.protocol('WM_DELETE_WINDOW', start)
+
+# Force the disclaimer to the front and bring our process to the
+# foreground — Finder-launched .app processes don't always get focus.
+top.lift()
+top.focus_force()
+top.after(100, _bring_app_to_front)
 
 method = tk.IntVar()
 item = tk.IntVar()
@@ -323,13 +384,13 @@ def about_dialog():
     win.configure()
     win.resizable(0,0)
 
-    img = ImageTk.PhotoImage(Image.open("app.gif").resize((128, 128), Image.Resampling.LANCZOS))
+    img = ImageTk.PhotoImage(Image.open(os.path.join(_RESOURCE_DIR, "app.gif")).resize((128, 128), Image.Resampling.LANCZOS))
     icon = ttk.Label(win, image=img)
     icon.image = img
-    name = ttk.Label(win, text="Open Source Synology Cloud Sync Decryption Tool", font="San\ Francisco 14 bold")
+    name = ttk.Label(win, text="Open Source Synology Cloud Sync Decryption Tool", font=("San Francisco", 14, "bold"))
     copytext = "© " + str(datetime.datetime.now().year) + " - Created by Anojh Thayaparan"
     author = ttk.Label(win, text=copytext)
-    license = tk.Text(win, height=8, width=31, font="San\ Francisco 12", wrap='word')
+    license = tk.Text(win, height=8, width=31, font=("San Francisco", 12), wrap='word')
     license.insert("1.0", "\nLICENSE:\n This app is provided as is to the user, without any liabilities, warranties or guarantees from the author. Any damages arising from use or misuse of the software is not a liability of the author.\nFor more information refer to the COPYRIGHTS file shipped with the application.")
     license.tag_config("center", justify='center')
     license.tag_add("center", "1.0", "end")

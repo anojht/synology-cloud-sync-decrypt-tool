@@ -1,0 +1,16 @@
+.DS_Store
+*.pyc
+__pycache__/
+
+.venv/
+venv/
+.python-version
+
+build/
+dist/
+dist-zips/
+.eggs/
+*.egg-info/
+
+settings.json
+package-lock.json

@@ -183,7 +183,11 @@ def decrypt_stream(instream, outstream, password=None, private_key=None, public_
 
         session_key = None
         decryptor = None
-        decrypt_stream.md5_digestor = None # special kind of local variable...
+        # NOTE: must be a real local (closed over via ``nonlocal``), not a
+        # function attribute. Function attributes are shared across all
+        # callers, which corrupts MD5 verification when ``decrypt_stream`` is
+        # invoked concurrently from multiple threads.
+        md5_digestor = None
         expected_md5_digest = None
         enc_key1_bytes = None
         enc_key2_bytes = None
@@ -192,8 +196,8 @@ def decrypt_stream(instream, outstream, password=None, private_key=None, public_
 
         def outstream_writer_and_md5_digestor(decompressed_chunk):
                 outstream.write(decompressed_chunk)
-                if decrypt_stream.md5_digestor != None:
-                        decrypt_stream.md5_digestor.update(decompressed_chunk)
+                if md5_digestor != None:
+                        md5_digestor.update(decompressed_chunk)
                         
         with util.Lz4Decompressor(decompressed_chunk_handler=outstream_writer_and_md5_digestor) as decompressor:
                 decrypted_chunk = None
@@ -202,7 +206,7 @@ def decrypt_stream(instream, outstream, password=None, private_key=None, public_
                                 if case('digest'):
                                         if value != 'md5':
                                                 LOGGER.warning('found unexpected digest "%s": cannot verify checksum', value)
-                                        decrypt_stream.md5_digestor = hashlib.md5()
+                                        md5_digestor = hashlib.md5()
                                         break
                                 if case('enc_key1'):
                                         enc_key1_bytes = base64.b64decode(value.encode('ascii'))
@@ -261,7 +265,7 @@ def decrypt_stream(instream, outstream, password=None, private_key=None, public_
                 if decrypted_chunk:
                         decompressor.write(strip_PKCS7_padding(decrypted_chunk))
 
-        if decrypt_stream.md5_digestor != None and expected_md5_digest != None:
-                actual_md5_digest = decrypt_stream.md5_digestor.hexdigest()
+        if md5_digestor != None and expected_md5_digest != None:
+                actual_md5_digest = md5_digestor.hexdigest()
                 if actual_md5_digest != expected_md5_digest:
                         raise Exception('expected md5 digest %s but found %s', expected_md5_digest, actual_md5_digest)
