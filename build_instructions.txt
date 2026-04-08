@@ -1,0 +1,13 @@
+Run from source:
+    uv sync
+    uv run python Synology.py
+
+Run tests:
+    uv run pytest
+
+Build the .app (macOS):
+    uv sync --group build
+    uv run python setup.py py2app
+
+The built app is at:
+    dist/Open Source Synology Cloud Sync Decryption Tool.app
