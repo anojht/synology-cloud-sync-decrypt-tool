@@ -323,7 +323,7 @@ def about_dialog():
     win.configure()
     win.resizable(0,0)
 
-    img = ImageTk.PhotoImage(Image.open("app.gif").resize((128, 128), Image.ANTIALIAS))
+    img = ImageTk.PhotoImage(Image.open("app.gif").resize((128, 128), Image.Resampling.LANCZOS))
     icon = ttk.Label(win, image=img)
     icon.image = img
     name = ttk.Label(win, text="Open Source Synology Cloud Sync Decryption Tool", font="San\ Francisco 14 bold")

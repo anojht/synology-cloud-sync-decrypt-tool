@@ -97,7 +97,7 @@ If you choose to install dependencies manually as per the instructions above, yo
 
 ## Troubleshooting App Issues
 
-The app is set to create DEBUG logs in the following location: ~/synologycloudsyncdecrypttool.log
+The app is set to create DEBUG logs in the following location: `~/synologycloudsyncdecrypttool.log`
 
 If you require help please include your log file when creating issues in this repository.
 
