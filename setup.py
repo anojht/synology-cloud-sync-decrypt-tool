@@ -5,41 +5,24 @@ Usage:
     python setup.py py2app
 """
 
-import glob
 import os
-import re
 import sys
 
 import setuptools.dist
 
 
-def _find_tcl_tk_script_dirs(lib_dir):
-    """Return ``(tcl_dir, tk_dir)`` for the highest version of Tcl/Tk
-    found under ``lib_dir``. python-build-standalone ships Tcl/Tk 8.6 in
-    arm64 builds and Tcl/Tk 9.0 in x86_64 builds, so we cannot hardcode
-    a version. Returns ``(None, None)`` if nothing is found."""
-    def _highest(prefix):
-        candidates = []
-        for path in glob.glob(os.path.join(lib_dir, prefix + "[0-9]*.[0-9]*")):
-            name = os.path.basename(path)
-            m = re.fullmatch(re.escape(prefix) + r"(\d+)\.(\d+)", name)
-            if m and os.path.isdir(path):
-                candidates.append(((int(m.group(1)), int(m.group(2))), path))
-        candidates.sort()
-        return candidates[-1][1] if candidates else None
-    return _highest("tcl"), _highest("tk")
-
-
-# uv-managed Python (python-build-standalone) ships Tcl/Tk inside the
-# interpreter prefix but hardcodes its own build path inside libtcl. py2app's
-# tkinter recipe calls ``_tkinter.create()`` during the build, which fails
-# unless TCL_LIBRARY/TK_LIBRARY point at the real locations. Set them
-# automatically when not already provided.
+# uv-managed Python (python-build-standalone) ships Tcl/Tk 9.0 inside the
+# interpreter prefix on both arm64 and x86_64 (we pin Python 3.13), but
+# hardcodes its own build path inside libtcl. py2app's tkinter recipe calls
+# ``_tkinter.create()`` during the build, which fails unless TCL_LIBRARY /
+# TK_LIBRARY point at the real locations. Set them automatically when not
+# already provided.
 if "TCL_LIBRARY" not in os.environ or "TK_LIBRARY" not in os.environ:
-    # ``sys.base_prefix`` points at the underlying Python install rather than
-    # the venv, where the Tcl/Tk runtime files actually live.
-    _tcl_dir, _tk_dir = _find_tcl_tk_script_dirs(os.path.join(sys.base_prefix, "lib"))
-    if _tcl_dir and _tk_dir:
+    # ``sys.base_prefix`` points at the underlying Python install rather
+    # than the venv, where the Tcl/Tk runtime files actually live.
+    _tcl_dir = os.path.join(sys.base_prefix, "lib", "tcl9.0")
+    _tk_dir = os.path.join(sys.base_prefix, "lib", "tk9.0")
+    if os.path.isdir(_tcl_dir) and os.path.isdir(_tk_dir):
         os.environ.setdefault("TCL_LIBRARY", _tcl_dir)
         os.environ.setdefault("TK_LIBRARY", _tk_dir)
 
@@ -62,7 +45,7 @@ setuptools.dist.Distribution.parse_config_files = _patched_parse_config_files
 # tries to copy ``zlib.__file__`` into the bundle, which fails. Since zlib is
 # already inside the bundled interpreter binary, we can safely skip the copy.
 import zlib
-if not hasattr(zlib, "__file__"):
+if "py2app" in sys.argv and not hasattr(zlib, "__file__"):
     _BUILTIN_SENTINEL = "<py2app:builtin-zlib>"
     zlib.__file__ = _BUILTIN_SENTINEL
 
@@ -90,8 +73,8 @@ OPTIONS = {'packages' : ['syndecrypt', 'lz4', 'PIL', 'Cryptodome'],
                 'CFBundleDisplayName': APP_NAME,
                 'CFBundleGetInfoString': "Open Source Synology Cloud Sync Decryption Tool",
                 'CFBundleIdentifier': "com.anojht.osx.synologycloudsyncdecryptiontool",
-                'CFBundleVersion': "10.0.0",
-                'CFBundleShortVersionString': "10.0.0",
+                'CFBundleVersion': "11.0.0",
+                'CFBundleShortVersionString': "11.0.0",
                 'NSHumanReadableCopyright': "Copyright 2026, Anojh Thayaparan, All Rights Reserved"
                 }
 }
@@ -107,15 +90,15 @@ setup(
 # ---------------------------------------------------------------------------
 # Post-build: bundle Tcl/Tk into the .app
 # ---------------------------------------------------------------------------
-# python-build-standalone (used by uv) ships Tcl/Tk as plain .dylibs plus
-# script directories under ``<base>/lib/{tcl8.6,tk8.6}``. py2app's tkinter
+# python-build-standalone (used by uv) ships Tcl/Tk 9.0 as plain .dylibs plus
+# script directories under ``<base>/lib/{tcl9.0,tk9.0}``. py2app's tkinter
 # recipe is wired for the python.org installer's Tcl.framework/Tk.framework
 # layout, so the .app it produces is missing the libraries entirely.
 #
 # After py2app finishes, copy the .dylibs next to ``_tkinter.so`` (which has
 # ``LC_RPATH = @loader_path/../..``) and copy the script directories under
-# ``Contents/Resources/lib/`` so the runtime hook in ``Synology.py`` can point
-# ``TCL_LIBRARY`` / ``TK_LIBRARY`` at them.
+# ``Contents/Resources/lib/`` so the runtime hook in ``syndecrypt/gui.py``
+# can point ``TCL_LIBRARY`` / ``TK_LIBRARY`` at them.
 if "py2app" in sys.argv:
     import shutil
 
@@ -127,32 +110,23 @@ if "py2app" in sys.argv:
     )
     if os.path.isdir(_bundle):
         _src_lib = os.path.join(sys.base_prefix, "lib")
-        # ``_tkinter.so`` lives at Resources/lib/python3.12/lib-dynload/ and
+        # ``_tkinter.so`` lives at Resources/lib/python3.13/lib-dynload/ and
         # has LC_RPATH = @loader_path/../.. which resolves to Resources/lib/.
         _dylib_dst = os.path.join(_bundle, "lib")
         os.makedirs(_dylib_dst, exist_ok=True)
-        # Copy every Tcl/Tk dylib in the base prefix. arm64 PBS Python ships
-        # ``libtcl8.6.dylib`` + ``libtk8.6.dylib``; x86_64 PBS Python ships
-        # ``libtcl9.0.dylib`` + ``libtcl9tk9.0.dylib`` (Tk 9 split things
-        # differently). Globbing keeps us version-agnostic.
-        _dylib_globs = ("libtcl*.dylib", "libtk*.dylib", "libtcl*tk*.dylib")
-        _copied_dylibs = []
-        for _pattern in _dylib_globs:
-            for _src in glob.glob(os.path.join(_src_lib, _pattern)):
-                _name = os.path.basename(_src)
+        # Tk 9 ships its dylibs as ``libtcl9.0.dylib`` and
+        # ``libtcl9tk9.0.dylib`` (Tk 9 split things differently from 8.6).
+        for _name in ("libtcl9.0.dylib", "libtcl9tk9.0.dylib"):
+            _src = os.path.join(_src_lib, _name)
+            if os.path.isfile(_src):
                 shutil.copy2(_src, os.path.join(_dylib_dst, _name))
-                _copied_dylibs.append(_name)
 
         _scripts_dst = os.path.join(_bundle, "lib")
-        # Copy every ``tclX[.Y]`` and ``tkX[.Y]`` script directory we find.
-        _copied_scripts = []
-        for _pattern in ("tcl[0-9]*", "tk[0-9]*"):
-            for _src in glob.glob(os.path.join(_src_lib, _pattern)):
-                _name = os.path.basename(_src)
-                _dst = os.path.join(_scripts_dst, _name)
-                if os.path.isdir(_src) and not os.path.isdir(_dst):
-                    shutil.copytree(_src, _dst, symlinks=True)
-                    _copied_scripts.append(_name)
+        for _name in ("tcl9.0", "tk9.0"):
+            _src = os.path.join(_src_lib, _name)
+            _dst = os.path.join(_scripts_dst, _name)
+            if os.path.isdir(_src) and not os.path.isdir(_dst):
+                shutil.copytree(_src, _dst, symlinks=True)
 
         # Tk's bundled ``console.tcl`` builds an internal Tcl console window
         # during ``TkpInit`` and configures it with a main menubar. On macOS
@@ -160,28 +134,25 @@ if "py2app" in sys.argv:
         # title — which is what Tk's menubar code passes — so the app
         # crashes the moment ``tkinter.Tk()`` is constructed in any GUI-
         # launched .app (no controlling TTY → console window is shown →
-        # menubar setup runs → SIGABRT). The bug is present in both Tk 8.6
-        # (arm64 PBS Python) and Tk 9.0 (x86_64 PBS Python), so stub the
-        # script in *every* tk*.* directory we bundled.
-        _stub_tcl = (
-            "# Replaced by setup.py post-build: Tk's internal console\n"
-            "# window crashes the app on macOS 26 because of a nil-title\n"
-            "# NSMenuItem in the menubar setup. We do not need the\n"
-            "# console, so stub everything out.\n"
-            "namespace eval ::tk {}\n"
-            "proc ::tk::ConsoleInit {} {}\n"
-            "proc ::tk::ConsoleExit {} {}\n"
-            "proc ::tk::ConsoleAbout {} {}\n"
-            "proc ::tk::ConsoleHistory {args} {}\n"
-            "proc ::tk::ConsoleSource {} {}\n"
-            "proc ::tk::ConsoleInvoke {args} {}\n"
-            "proc ::tk::ConsolePrompt {args} {}\n"
-            "proc ::tk::ConsoleOutput {args} {}\n"
-        )
-        for _tk_dir in glob.glob(os.path.join(_scripts_dst, "tk[0-9]*.[0-9]*")):
-            _console_tcl = os.path.join(_tk_dir, "console.tcl")
-            if os.path.isfile(_console_tcl):
-                with open(_console_tcl, "w") as _f:
-                    _f.write(_stub_tcl)
+        # menubar setup runs → SIGABRT). The bug is present in Tk 9.0, so
+        # stub the script in the bundled tk9.0 directory.
+        _console_tcl = os.path.join(_scripts_dst, "tk9.0", "console.tcl")
+        if os.path.isfile(_console_tcl):
+            with open(_console_tcl, "w") as _f:
+                _f.write(
+                    "# Replaced by setup.py post-build: Tk's internal console\n"
+                    "# window crashes the app on macOS 26 because of a nil-title\n"
+                    "# NSMenuItem in the menubar setup. We do not need the\n"
+                    "# console, so stub everything out.\n"
+                    "namespace eval ::tk {}\n"
+                    "proc ::tk::ConsoleInit {} {}\n"
+                    "proc ::tk::ConsoleExit {} {}\n"
+                    "proc ::tk::ConsoleAbout {} {}\n"
+                    "proc ::tk::ConsoleHistory {args} {}\n"
+                    "proc ::tk::ConsoleSource {} {}\n"
+                    "proc ::tk::ConsoleInvoke {args} {}\n"
+                    "proc ::tk::ConsolePrompt {args} {}\n"
+                    "proc ::tk::ConsoleOutput {args} {}\n"
+                )
 
-        print("post-build: bundled Tcl/Tk libraries and script directories")
+        print("post-build: bundled Tcl/Tk 9.0 libraries and script directories")

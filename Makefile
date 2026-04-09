@@ -2,8 +2,8 @@
 
 APP_NAME := Open Source Synology Cloud Sync Decryption Tool
 APP_PATH := dist/$(APP_NAME).app
-PY_ARM64 := cpython-3.12-macos-aarch64-none
-PY_X86_64 := cpython-3.12-macos-x86_64-none
+PY_ARM64 := cpython-3.13-macos-aarch64-none
+PY_X86_64 := cpython-3.13-macos-x86_64-none
 
 # Files copied alongside the .app inside each release zip.
 RELEASE_DOCS := COPYRIGHTS LICENSE README.md

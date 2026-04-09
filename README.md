@@ -38,7 +38,7 @@ things that might be construed to be illegal.)
 
 ## Use the prebuilt macOS app
 
-Download the latest `.app` from the [Releases](https://github.com/anojht/synology-cloud-sync-decrypt-tool/releases) page, drag it to `/Applications`, and run it. Apple Silicon (M1/M2/M3) and Intel are both supported. No external dependencies, no `lz4` install, no AppleScript installer — everything is bundled.
+Download the latest `.app` from the [Releases](https://github.com/anojht/synology-cloud-sync-decrypt-tool/releases) page, drag it to `/Applications`, and run it. Apple Silicon (M1/M2/M3) and Intel are both supported. No external dependencies, everything is bundled.
 
 ## Run from source
 
@@ -51,7 +51,7 @@ make sync
 make run
 ```
 
-`uv` provisions Python 3.12, creates an isolated `.venv/`, and installs all dependencies (including `lz4`, `Pillow`, `pycryptodomex`) — nothing leaks into your system Python.
+`uv` provisions Python 3.13, creates an isolated `.venv/`, and installs all dependencies (including `lz4`, `Pillow`, `pycryptodomex`).
 
 ## Run tests
 
@@ -77,6 +77,7 @@ file "dist/Open Source Synology Cloud Sync Decryption Tool.app/Contents/MacOS/Op
 ```
 
 > **Building x86_64 on Apple Silicon** requires Rosetta 2:
+>
 > ```bash
 > softwareupdate --install-rosetta --agree-to-license
 > ```

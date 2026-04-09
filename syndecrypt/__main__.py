@@ -20,16 +20,33 @@ Options:
 
 For more information, see https://github.com/anojht/synology-cloud-sync-decrypt-tool
 """
-import docopt
-import os
 import logging
+import os
 import sys
 from multiprocessing.pool import ThreadPool
+
+import docopt
 
 import syndecrypt.files as files
 #import files
 import syndecrypt.util as util
 #from syndecrypt import util
+from syndecrypt.core import EcryptfsFileError
+
+# Synology's *encrypted shared folder* feature uses eCryptfs, which is a
+# completely different format from Cloud Sync. Files in those folders have
+# this filename prefix. We check up-front and raise a clear error rather
+# than letting the Cloud Sync parser explode on a stack trace.
+ECRYPTFS_PREFIX = "ECRYPTFS_FNEK_ENCRYPTED."
+
+def _check_not_ecryptfs(name):
+    if os.path.basename(name).startswith(ECRYPTFS_PREFIX):
+        raise EcryptfsFileError(
+            "'%s' looks like a Synology eCryptfs encrypted shared folder file, "
+            "not a Cloud Sync encrypted file. This tool only handles Cloud Sync "
+            "output. See https://kb.synology.com/en-global/DSM/tutorial/How_to_encrypt_and_decrypt_shared_folders_on_my_Synology_NAS "
+            "for decrypting eCryptfs shares." % os.path.basename(name)
+        )
 
 def main(args):
 
@@ -63,6 +80,9 @@ def main(args):
     ff = os.path.abspath(f)
     fp = os.path.basename(ff)
 
+    if os.path.isfile(ff):
+        _check_not_ecryptfs(ff)
+
     if os.path.isdir(ff):
         if not os.path.isdir(os.path.join(output_dir, fp)):
             output_dir = os.path.join(output_dir, fp)
@@ -86,6 +106,7 @@ def main(args):
                 # garbage input.
                 if filename in (".DS_Store", "Thumbs.db") or filename.startswith("._"):
                     continue
+                _check_not_ecryptfs(filename)
                 decrypt_args.append((
                     os.path.join(input_dir, filename),
                     os.path.join(input_dir.replace(ff, output_dir, 1), filename),
@@ -106,5 +127,21 @@ def main(args):
         files.decrypt_file(ff, os.path.join(output_dir, fp), password=password, private_key=private_key, public_key=public_key)
 
 
+def cli():
+    """Console-script entry point installed via ``[project.scripts]``.
+    Parses argv via docopt (per the module docstring) and forwards to
+    ``main`` in the positional shape it expects."""
+    arguments = docopt.docopt(__doc__)
+    out = arguments['--output-directory']
+    encrypted_files = arguments['<encrypted-file>']
+    if arguments['--password-file']:
+        argv = ['-p', arguments['--password-file'], out]
+    else:
+        argv = ['-k', arguments['--private-key-file'],
+                arguments['--public-key-file'], out]
+    for f in encrypted_files:
+        main(argv + [f])
+
+
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    cli()

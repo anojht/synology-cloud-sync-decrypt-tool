@@ -15,6 +15,15 @@ import binascii
 
 LOGGER=logging.getLogger(__name__)
 
+
+class EcryptfsFileError(Exception):
+        """Raised when the user feeds us a file from a Synology *encrypted
+        shared folder* (eCryptfs) instead of a Cloud Sync encrypted file.
+        These have completely different on-disk formats — eCryptfs files
+        carry an ``ECRYPTFS_FNEK_ENCRYPTED.`` filename prefix and a
+        different magic header — and there is no overlap in tooling."""
+        pass
+
 # Thanks to http://security.stackexchange.com/a/117654/3617,
 # this is the algorithm by which 'openssl enc' generates
 # a key and an iv from a password.
