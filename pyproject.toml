@@ -1,17 +1,20 @@
 [project]
 name = "synology-cloud-sync-decrypt-tool"
-version = "10.0.0"
+version = "11.0.0"
 description = "Open Source macOS GUI tool for decrypting Synology Cloud Sync encrypted files."
-requires-python = ">=3.9"
+requires-python = ">=3.13"
 license = "GPL-3.0-or-later"
 license-files = ["LICENSE"]
 authors = [{ name = "Anojh Thayaparan" }]
 dependencies = [
     "pycryptodomex>=3.20",
     "docopt>=0.6.2",
-    "Pillow>=10.0.1",
+    "Pillow>=12.1.1",
     "lz4>=4.3.0",
 ]
+
+[project.scripts]
+syndecrypt = "syndecrypt.__main__:cli"
 
 [dependency-groups]
 dev = [
@@ -22,8 +25,12 @@ build = [
     "py2app>=0.28",
 ]
 
-[tool.uv]
-package = false
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["syndecrypt"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
