@@ -48,8 +48,26 @@ def _check_not_ecryptfs(name):
             "for decrypting eCryptfs shares." % os.path.basename(name)
         )
 
-def main(args):
+def _password_from_file(file_name):
+    """Read the decryption password out of ``file_name``.
 
+    This deliberately lives in ``cli()`` rather than ``main()``: the GUI
+    calls ``main(["-p", <the password itself>, ...])`` straight from its
+    entry box, so ``main`` has to keep treating that argument as a literal
+    password. Only the command line names a *file* there. (``-k``/``-l`` are
+    read inside ``main`` because the GUI passes paths for those too.)
+
+    A trailing newline is nearly always an editor artefact rather than part
+    of the password, and keeping it fails deep inside the decryptor with an
+    opaque "invalid padding byte" error, so strip it. Only CR/LF is removed
+    -- spaces and tabs could legitimately end a password.
+    """
+    return util._binary_contents_of(file_name).rstrip(b'\r\n')
+
+
+def main(args):
+    # NB: for "-p", args[1] is the password itself, not a path -- see
+    # _password_from_file above.
     if args[0] == "-p":
         arguments = {"--password-file": args[1], "--private-key-file": None, "--public-key-file": None, "--output-directory": args[2], "<encrypted-file>": args[3]}
     elif args[0] == "-k":
@@ -135,7 +153,7 @@ def cli():
     out = arguments['--output-directory']
     encrypted_files = arguments['<encrypted-file>']
     if arguments['--password-file']:
-        argv = ['-p', arguments['--password-file'], out]
+        argv = ['-p', _password_from_file(arguments['--password-file']), out]
     else:
         argv = ['-k', arguments['--private-key-file'],
                 arguments['--public-key-file'], out]
