@@ -1,0 +1,43 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+# A PR branch in this repo triggers both `push` and `pull_request`. Cancel
+# superseded runs rather than letting duplicates pile up on rapid pushes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    name: pytest (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # macOS is the release target; Linux is covered because the README
+        # documents running the GUI and CLI from source there.
+        os: [macos-latest, ubuntu-latest]
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      # Plain `uv sync` (not --all-groups) deliberately skips the `build`
+      # group: py2app is macOS-only and the tests do not need it. The `dev`
+      # group carries pytest/assertpy and is synced by default.
+      #
+      # --python overrides .python-version, which pins the platform-specific
+      # cpython-3.13-macos-aarch64-none that the release build wants and that
+      # would not resolve at all on the Linux runner.
+      - name: Install dependencies
+        run: uv sync --python 3.13
+
+      - name: Run tests
+        run: uv run --python 3.13 pytest -v
