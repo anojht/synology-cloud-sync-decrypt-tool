@@ -1,3 +1,4 @@
+[![Tests](https://img.shields.io/github/actions/workflow/status/anojht/synology-cloud-sync-decrypt-tool/tests.yml?branch=master&label=tests)](https://github.com/anojht/synology-cloud-sync-decrypt-tool/actions/workflows/tests.yml)
 [![Github All Releases](https://img.shields.io/github/downloads/anojht/synology-cloud-sync-decrypt-tool/total.svg)](https://github.com/anojht/synology-cloud-sync-decrypt-tool)
 [![Paypal](https://img.shields.io/badge/paypal-donate-yellow.svg)](https://paypal.me/Anojh)
 
