@@ -73,8 +73,8 @@ OPTIONS = {'packages' : ['syndecrypt', 'lz4', 'PIL', 'Cryptodome'],
                 'CFBundleDisplayName': APP_NAME,
                 'CFBundleGetInfoString': "Open Source Synology Cloud Sync Decryption Tool",
                 'CFBundleIdentifier': "com.anojht.osx.synologycloudsyncdecryptiontool",
-                'CFBundleVersion': "11.0.0",
-                'CFBundleShortVersionString': "11.0.0",
+                'CFBundleVersion': "12.0.0",
+                'CFBundleShortVersionString': "12.0.0",
                 'NSHumanReadableCopyright': "Copyright 2026, Anojh Thayaparan, All Rights Reserved"
                 }
 }

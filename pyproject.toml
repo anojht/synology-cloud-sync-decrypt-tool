@@ -1,6 +1,6 @@
 [project]
 name = "synology-cloud-sync-decrypt-tool"
-version = "11.0.0"
+version = "12.0.0"
 description = "Open Source macOS GUI tool for decrypting Synology Cloud Sync encrypted files."
 requires-python = ">=3.13"
 license = "GPL-3.0-or-later"
