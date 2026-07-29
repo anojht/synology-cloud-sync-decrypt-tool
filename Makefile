@@ -54,26 +54,40 @@ _clean-build:
 # Each build resets .venv to the target arch's CPython, syncs deps so uv
 # pulls per-arch wheels for lz4 / Pillow / pycryptodomex, then runs py2app.
 
+# ``.python-version`` pins an interpreter, and uv honours that pin over an
+# already-created venv: both ``uv sync`` and ``uv run`` will silently discard
+# a venv built from a different interpreter and rebuild it from the pin. So
+# every uv invocation below has to name the target interpreter explicitly --
+# passing it to ``uv venv`` alone is not enough. Getting this wrong produces a
+# native-arch .app under an x86_64 label with no error (shipped in V11).
+define _assert_arch
+	actual=$$(file -b "$(APP_PATH)/Contents/MacOS/$(APP_NAME)" | awk '{print $$NF}'); \
+	if [ "$$actual" != "$(1)" ]; then \
+		echo "ERROR: expected a $(1) binary, built $$actual"; exit 1; \
+	fi; \
+	echo "verified: $(APP_NAME) is $$actual"
+endef
+
 build: build-arm64
 
 build-arm64: _clean-build
 	uv python install $(PY_ARM64)
 	rm -rf .venv
 	uv venv --python $(PY_ARM64)
-	uv sync --all-groups
-	uv run python setup.py py2app
+	uv sync --all-groups --python $(PY_ARM64)
+	uv run --python $(PY_ARM64) python setup.py py2app
 	@echo
-	@file "$(APP_PATH)/Contents/MacOS/$(APP_NAME)"
+	@$(call _assert_arch,arm64)
 
 build-x86_64: _clean-build
 	@/usr/bin/arch -x86_64 /usr/bin/true 2>/dev/null || (echo "Rosetta 2 not available. Install with: softwareupdate --install-rosetta --agree-to-license"; exit 1)
 	uv python install $(PY_X86_64)
 	rm -rf .venv
 	uv venv --python $(PY_X86_64)
-	uv sync --all-groups
-	uv run python setup.py py2app
+	uv sync --all-groups --python $(PY_X86_64)
+	uv run --python $(PY_X86_64) python setup.py py2app
 	@echo
-	@file "$(APP_PATH)/Contents/MacOS/$(APP_NAME)"
+	@$(call _assert_arch,x86_64)
 
 # ---------------------------------------------------------------------------
 # Release packaging
