@@ -32,7 +32,7 @@ def test_decrypt_enc_key1():
 
         enc_key1 = b'f662PyjwrkzR61qSRHyBEVkXVd7STUpV6o7IrJs+m8gN1haqmBtMzLvq2/Gj134r'
         enc_key1_binary = base64.b64decode(enc_key1)
-        assert core.decrypted_with_password(enc_key1_binary, PASSWORD) == b'BxY2A-ouRpI8YRvmiWii5KkCF3LVN1O6'
+        assert core.decrypted_with_password(enc_key1_binary, PASSWORD, salt=b'') == b'BxY2A-ouRpI8YRvmiWii5KkCF3LVN1O6'
 
 def test_decrypt_enc_key2():
         """
@@ -83,7 +83,7 @@ def test_decode_single_line_file():
                 assert next(s) == ('file_md5', 'e45f14e62971070603ff27c2bb05f5a4')
 
                 session_key = b'BxY2A-ouRpI8YRvmiWii5KkCF3LVN1O6'
-                decrypted_compressed_data = core.decrypted_with_password(data, session_key)
+                decrypted_compressed_data = core.decrypted_with_password(data, session_key, salt=b'')
                 decrypted_uncompressed_data = lz4_uncompress(decrypted_compressed_data)
                 assert decrypted_uncompressed_data == b'Just a single line, no newline character at the end...'
 
