@@ -108,11 +108,13 @@ dist-x86_64: dist-zips build-x86_64
 # Stage the .app + release docs into ``dist-zips/<APP> (<arch>)/`` and zip
 # that directory so the archive contains the binary alongside COPYRIGHTS,
 # LICENSE, and README.md under a single self-explanatory top-level folder.
+# ``cp -X`` drops extended attributes such as com.apple.macl, which ditto
+# would otherwise sequester into stray ``__MACOSX/._README.md`` entries.
 define _stage_and_zip
 	rm -rf "dist-zips/$(APP_NAME) ($(1))"
 	mkdir -p "dist-zips/$(APP_NAME) ($(1))"
 	cp -R "$(APP_PATH)" "dist-zips/$(APP_NAME) ($(1))/"
-	cp $(RELEASE_DOCS) "dist-zips/$(APP_NAME) ($(1))/"
+	cp -X $(RELEASE_DOCS) "dist-zips/$(APP_NAME) ($(1))/"
 	cd dist-zips && /usr/bin/ditto -c -k --sequesterRsrc --keepParent "$(APP_NAME) ($(1))" "$(APP_NAME)-$(1).zip"
 	rm -rf "dist-zips/$(APP_NAME) ($(1))"
 	@echo "wrote dist-zips/$(APP_NAME)-$(1).zip"
